@@ -1,28 +1,14 @@
-#[derive(Debug)]
-pub struct Address([bool; 15]);
-#[derive(Debug)]
-pub struct Comp([bool; 15]);
-#[derive(Debug)]
-pub struct Dest([bool; 15]);
-#[derive(Debug)]
-pub struct Jump([bool; 15]);
-#[derive(Debug)]
-pub enum Instruction {
-    A(Address),
-    C { comp: Comp, dest: Dest, jump: Jump },
-}
+mod pre_processor;
+mod syntax;
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub use syntax::*;
 
+pub fn parse(input: String) -> Vec<Command> {
+    let pre_processsed: Vec<String> = pre_processor::pre_process(input);
+
+    unimplemented!()
+}
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 }
