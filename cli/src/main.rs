@@ -21,5 +21,6 @@ fn main() {
     };
 
     dbg!(input_path);
+    dbg!(parser::parse(&std::fs::read_to_string(input_path).unwrap()).unwrap());
     dbg!(output_path);
 }

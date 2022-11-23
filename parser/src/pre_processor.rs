@@ -13,7 +13,7 @@ fn remove_comment(line: String) -> String {
     }
 }
 
-pub(crate) fn pre_process(input: String) -> Vec<String> {
+pub(crate) fn pre_process(input: &str) -> Vec<String> {
     input
         .split('\n')
         .map(remove_whitespace)
@@ -39,9 +39,6 @@ mod tests {
 
     #[test]
     fn preprocess_works() {
-        assert_eq!(
-            pre_process("@\tvariable // comments".to_string())[0],
-            "@variable"
-        );
+        assert_eq!(pre_process("@\tvariable // comments")[0], "@variable");
     }
 }
