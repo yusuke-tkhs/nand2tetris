@@ -1,6 +1,10 @@
 [workspace]
 
 members = [
-    "cli",
-    "parser",
+    "assembler",
+    "schema",
 ]
+
+[workspace.dependencies]
+schema = {path="./schema"}
+anyhow = "1.0.66"

@@ -1,84 +1,5 @@
 mod pre_processor;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum DestMnemonic {
-    Null,
-    M,
-    D,
-    MD,
-    A,
-    AM,
-    AD,
-    AMD,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum CompMnemonic {
-    Zero,
-    One,
-    MinusOne,
-    D,
-    A,
-    NegateD,
-    NegateA,
-    DPlusOne,
-    APlusOne,
-    DMinusOne,
-    AMinusOne,
-    DPlusA,
-    DMinusA,
-    AMinusD,
-    DAndA,
-    DOrA,
-    M,
-    NegateM,
-    MinusM,
-    MPlusOne,
-    MMinusOne,
-    DPlusM,
-    DMinusM,
-    MMinusD,
-    DAndM,
-    DOrM,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum JumpMnemonic {
-    Null,
-    JGT,
-    JEQ,
-    JGE,
-    JLT,
-    JNE,
-    JLE,
-    JMP,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-
-pub struct CCommand {
-    dest: Option<DestMnemonic>,
-    comp: CompMnemonic,
-    jump: Option<JumpMnemonic>,
-}
-
-// 定義済みシンボル、ラベル、変数のいずれかを意味する。
-#[derive(Debug, Clone, PartialEq)]
-pub struct Symbol(String);
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ACommand {
-    Address(u16),
-    Symbol(Symbol), // @value で数字以外のもの。
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Command {
-    A(ACommand),
-    C(CCommand),
-    L(Symbol),
-}
-
 use combine::error::ParseError;
 use combine::error::StreamError;
 use combine::parser::char::string;
@@ -89,6 +10,7 @@ use combine::stream::RangeStream;
 use combine::stream::StreamOnce;
 use combine::EasyParser;
 use combine::{attempt, between, one_of, optional, token};
+use schema::hack::*;
 
 fn returns<'a, I, T, U>(p: impl Parser<I, Output = T>, constant: U) -> impl Parser<I, Output = U>
 where
@@ -197,8 +119,8 @@ where
     many1(one_of(DIGIT_CHAR.chars())).and_then(|numbers: String| {
         numbers
             .parse::<u16>()
-            .map(|address| ACommand::Address(address))
-            .map_err(|x| AndThenError::<I>::other(x))
+            .map(ACommand::Address)
+            .map_err(AndThenError::<I>::other)
     })
 }
 
@@ -219,7 +141,7 @@ where
     I: RangeStream<Token = char, Range = &'a str> + 'a,
     I::Error: ParseError<I::Token, I::Range, I::Position>,
 {
-    token('@').with(p_address().or(p_symbol().map(|s| ACommand::Symbol(s))))
+    token('@').with(p_address().or(p_symbol().map(ACommand::Symbol)))
 }
 
 fn l_command<'a, I>() -> impl Parser<I, Output = Symbol> + 'a
@@ -251,7 +173,7 @@ where
     let parsed = parser_generator()
         .easy_parse(input)
         .map_err(|e| anyhow::anyhow!("{:?}", e))?;
-    Ok(parsed.0.clone())
+    Ok(parsed.0)
 }
 
 pub fn parse(input: &str) -> anyhow::Result<Vec<Command>> {

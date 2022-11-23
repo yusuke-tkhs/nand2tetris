@@ -1,10 +1,11 @@
 [package]
-name = "parser"
+name = "assembler"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.66"
+anyhow = {workspace = true}
 combine = {version="4.6.6", features=["std"]}
+schema = {workspace = true}

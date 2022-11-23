@@ -9,17 +9,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
 
 [[package]]
+name = "assembler"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "combine",
+ "schema",
+]
+
+[[package]]
 name = "bytes"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
-
-[[package]]
-name = "cli"
-version = "0.1.0"
-dependencies = [
- "parser",
-]
 
 [[package]]
 name = "combine"
@@ -38,9 +40,5 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
-name = "parser"
+name = "schema"
 version = "0.1.0"
-dependencies = [
- "anyhow",
- "combine",
-]
