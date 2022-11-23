@@ -61,8 +61,14 @@ pub struct CCommand {
 }
 
 // 定義済みシンボル、ラベル、変数のいずれかを意味する。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Symbol(pub String);
+
+impl Symbol {
+    pub fn new(str: &str) -> Self {
+        Self(str.to_string())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ACommand {

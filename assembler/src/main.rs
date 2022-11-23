@@ -21,7 +21,8 @@ fn main() {
     let commands: Vec<hack::Command> = parser::parse(&input).unwrap();
     dbg!(commands.clone());
 
-    let symbol_table = symbol_table::create(&commands);
+    let symbol_table = symbol_table::SymbolTable::new(&commands);
+    dbg!(symbol_table.clone());
 
     let machine_code = machine_code::construct(&symbol_table, &commands);
 
