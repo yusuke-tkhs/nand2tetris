@@ -66,6 +66,8 @@ where
         attempt(returns(string("D+1"), CompMnemonic::DPlusOne)),
         attempt(returns(string("!A"), CompMnemonic::NegateA)),
         attempt(returns(string("!D"), CompMnemonic::NegateD)),
+        attempt(returns(string("-A"), CompMnemonic::MinusA)),
+        attempt(returns(string("-D"), CompMnemonic::MinusD)),
         attempt(returns(string("A"), CompMnemonic::A)),
         attempt(returns(string("D"), CompMnemonic::D)),
         attempt(returns(string("1"), CompMnemonic::One)),
@@ -239,6 +241,8 @@ mod tests {
         easy_parser_assert(comp_mnemonic, "A", CompMnemonic::A);
         easy_parser_assert(comp_mnemonic, "!D", CompMnemonic::NegateD);
         easy_parser_assert(comp_mnemonic, "!A", CompMnemonic::NegateA);
+        easy_parser_assert(comp_mnemonic, "-D", CompMnemonic::MinusD);
+        easy_parser_assert(comp_mnemonic, "-A", CompMnemonic::MinusA);
         easy_parser_assert(comp_mnemonic, "D+1", CompMnemonic::DPlusOne);
         easy_parser_assert(comp_mnemonic, "A+1", CompMnemonic::APlusOne);
         easy_parser_assert(comp_mnemonic, "D-1", CompMnemonic::DMinusOne);

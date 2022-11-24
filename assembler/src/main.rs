@@ -19,12 +19,10 @@ fn main() {
     let input = std::fs::read_to_string(input_path).unwrap();
 
     let commands: Vec<hack::Command> = parser::parse(&input).unwrap();
-    dbg!(commands.clone());
 
     let symbol_table = symbol_table::SymbolTable::new(&commands);
-    dbg!(symbol_table.clone());
 
-    let machine_code = machine_code::construct(&symbol_table, &commands);
+    let machine_code = machine_code::construct(&symbol_table, commands).unwrap();
 
     let machine_code_str = machine_code::generate(machine_code);
 

@@ -19,6 +19,8 @@ pub enum CompMnemonic {
     A,
     NegateD,
     NegateA,
+    MinusD,
+    MinusA,
     DPlusOne,
     APlusOne,
     DMinusOne,
