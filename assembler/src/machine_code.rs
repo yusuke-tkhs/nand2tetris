@@ -112,7 +112,7 @@ impl Instruction {
             jump: jump_bit,
         }
     }
-    pub fn to_bit_string(self) -> String {
+    pub fn into_bit_string(self) -> String {
         match self {
             Self::A(address) => format!("0{:015b}", address),
             Self::C {
@@ -152,6 +152,7 @@ pub fn construct(
 pub fn generate(instructions: Vec<Instruction>) -> String {
     instructions
         .into_iter()
-        .map(Instruction::to_bit_string)
-        .collect()
+        .map(Instruction::into_bit_string)
+        .collect::<Vec<_>>()
+        .join("\n")
 }
