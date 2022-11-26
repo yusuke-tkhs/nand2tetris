@@ -2,6 +2,7 @@
 
 members = [
     "assembler",
+    "vm_translator",
     "schema",
 ]
 
