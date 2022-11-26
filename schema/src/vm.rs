@@ -36,3 +36,9 @@ pub enum MemoryAccessCommand {
     Push(Segment, Index),
     Pop(Segment, Index),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Command {
+    Arithmetic(ArithmeticCommand),
+    MemoryAccess(MemoryAccessCommand),
+}
