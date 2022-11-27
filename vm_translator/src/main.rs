@@ -17,6 +17,7 @@ fn main() {
     let input = std::fs::read_to_string(input_path).unwrap();
 
     let vm_commands: Vec<vm::Command> = parser::parse(input).unwrap();
+    dbg!(vm_commands.clone());
 
     let assembler_commands: Vec<hack::Command> = assembler_code::construct(vm_commands).unwrap();
 
