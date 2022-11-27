@@ -51,7 +51,8 @@ where
     I: RangeStream<Token = char, Range = &'a str> + 'a,
     I::Error: ParseError<I::Token, I::Range, I::Position>,
 {
-    (string("push").or(string("pop")))
+    (attempt(string("push")).or(attempt(string("pop"))))
+        .skip(space())
         .and(segment().skip(space()).and(index()))
         .map(|(access_type, (segment, index))| match access_type {
             "push" => vm::MemoryAccessCommand::Push(segment, index),
@@ -116,4 +117,85 @@ where
         .easy_parse(input)
         .map_err(|e| anyhow::anyhow!("{:?}", e))?;
     Ok(parsed.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_command() {
+        easy_parser_assert(
+            command,
+            "push argument 1",
+            vm::Command::MemoryAccess(vm::MemoryAccessCommand::Push(
+                vm::Segment::Argument,
+                vm::Index::new(1),
+            )),
+        );
+        easy_parser_assert(
+            command,
+            "lt",
+            vm::Command::Arithmetic(vm::ArithmeticCommand::Lt),
+        );
+    }
+
+    #[test]
+    fn parse_arithmetic_command() {
+        easy_parser_assert(arithmetic_command, "add", vm::ArithmeticCommand::Add);
+        easy_parser_assert(arithmetic_command, "sub", vm::ArithmeticCommand::Sub);
+        easy_parser_assert(arithmetic_command, "neg", vm::ArithmeticCommand::Neg);
+        easy_parser_assert(arithmetic_command, "eq", vm::ArithmeticCommand::Eq);
+        easy_parser_assert(arithmetic_command, "gt", vm::ArithmeticCommand::Gt);
+        easy_parser_assert(arithmetic_command, "lt", vm::ArithmeticCommand::Lt);
+        easy_parser_assert(arithmetic_command, "and", vm::ArithmeticCommand::And);
+        easy_parser_assert(arithmetic_command, "or", vm::ArithmeticCommand::Or);
+        easy_parser_assert(arithmetic_command, "not", vm::ArithmeticCommand::Not);
+    }
+
+    #[test]
+    fn parse_memory_access_command() {
+        easy_parser_assert(
+            memory_access_command,
+            "push argument 1",
+            vm::MemoryAccessCommand::Push(vm::Segment::Argument, vm::Index::new(1)),
+        );
+        easy_parser_assert(
+            memory_access_command,
+            "pop that 2",
+            vm::MemoryAccessCommand::Pop(vm::Segment::That, vm::Index::new(2)),
+        );
+    }
+
+    #[test]
+    fn parse_segment() {
+        easy_parser_assert(segment, "argument", vm::Segment::Argument);
+        easy_parser_assert(segment, "local", vm::Segment::Local);
+        easy_parser_assert(segment, "static", vm::Segment::Static);
+        easy_parser_assert(segment, "constant", vm::Segment::Constant);
+        easy_parser_assert(segment, "this", vm::Segment::This);
+        easy_parser_assert(segment, "that", vm::Segment::That);
+        easy_parser_assert(segment, "pointer", vm::Segment::Pointer);
+        easy_parser_assert(segment, "temp", vm::Segment::Temp);
+    }
+
+    #[test]
+    fn parse_index() {
+        easy_parser_assert(index, "123", vm::Index::new(123));
+    }
+
+    #[allow(dead_code)]
+    fn easy_parser_assert<'a, I, T, F, Fout>(parser_generator: F, input: I, expected: T)
+    where
+        I: RangeStream<Token = char, Range = &'a str>,
+        F: Fn() -> Fout,
+        Fout: EasyParser<I, Output = T>,
+        T: PartialEq + std::fmt::Debug,
+        <I as StreamOnce>::Position: Default + std::fmt::Debug,
+    {
+        match parser_generator().easy_parse(input) {
+            Ok((output, _)) => assert_eq!(output, expected),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
 }

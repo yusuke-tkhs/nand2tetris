@@ -190,22 +190,6 @@ mod tests {
     use super::*;
 
     #[allow(dead_code)]
-    fn parser_assert<'a, I, T, F, Fout>(parser_generator: F, input: I, expected: T)
-    where
-        I: RangeStream<Token = char, Range = &'a str>,
-        I::Error: ParseError<I::Token, I::Range, I::Position>,
-        F: Fn() -> Fout,
-        Fout: Parser<I, Output = T>,
-        T: PartialEq + std::fmt::Debug,
-        <I as combine::StreamOnce>::Error: std::fmt::Debug,
-    {
-        match parser_generator().parse(input) {
-            Ok((output, _)) => assert_eq!(output, expected),
-            Err(e) => panic!("{:?}", e),
-        }
-    }
-
-    #[allow(dead_code)]
     fn easy_parser_assert<'a, I, T, F, Fout>(parser_generator: F, input: I, expected: T)
     where
         I: RangeStream<Token = char, Range = &'a str>,
