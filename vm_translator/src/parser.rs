@@ -70,7 +70,7 @@ where
     I::Error: ParseError<I::Token, I::Range, I::Position>,
 {
     (string("pop").and(space()))
-        .with(pop_target_segment().skip(space()).and(index()))
+        .with(memory_segment().skip(space()).and(index()))
         .map(|(segment, index)| vm::MemoryAccessCommand::Pop(segment, index))
 }
 
@@ -80,30 +80,24 @@ where
     I::Error: ParseError<I::Token, I::Range, I::Position>,
 {
     choice((
-        attempt(returns(string("argument"), vm::PushSourceSegment::Argument)),
-        attempt(returns(string("local"), vm::PushSourceSegment::Local)),
-        attempt(returns(string("static"), vm::PushSourceSegment::Static)),
         attempt(returns(string("constant"), vm::PushSourceSegment::Constant)),
-        attempt(returns(string("this"), vm::PushSourceSegment::This)),
-        attempt(returns(string("that"), vm::PushSourceSegment::That)),
-        attempt(returns(string("pointer"), vm::PushSourceSegment::Pointer)),
-        attempt(returns(string("temp"), vm::PushSourceSegment::Temp)),
+        attempt(memory_segment().map(vm::PushSourceSegment::Memory)),
     ))
 }
 
-fn pop_target_segment<'a, I>() -> impl Parser<I, Output = vm::PopTargetSegment>
+fn memory_segment<'a, I>() -> impl Parser<I, Output = vm::MemorySegment>
 where
     I: RangeStream<Token = char, Range = &'a str>,
     I::Error: ParseError<I::Token, I::Range, I::Position>,
 {
     choice((
-        attempt(returns(string("argument"), vm::PopTargetSegment::Argument)),
-        attempt(returns(string("local"), vm::PopTargetSegment::Local)),
-        attempt(returns(string("static"), vm::PopTargetSegment::Static)),
-        attempt(returns(string("this"), vm::PopTargetSegment::This)),
-        attempt(returns(string("that"), vm::PopTargetSegment::That)),
-        attempt(returns(string("pointer"), vm::PopTargetSegment::Pointer)),
-        attempt(returns(string("temp"), vm::PopTargetSegment::Temp)),
+        attempt(returns(string("argument"), vm::MemorySegment::Argument)),
+        attempt(returns(string("local"), vm::MemorySegment::Local)),
+        attempt(returns(string("static"), vm::MemorySegment::Static)),
+        attempt(returns(string("this"), vm::MemorySegment::This)),
+        attempt(returns(string("that"), vm::MemorySegment::That)),
+        attempt(returns(string("pointer"), vm::MemorySegment::Pointer)),
+        attempt(returns(string("temp"), vm::MemorySegment::Temp)),
     ))
 }
 
@@ -159,7 +153,7 @@ mod tests {
             command,
             "push argument 1",
             vm::Command::MemoryAccess(vm::MemoryAccessCommand::Push(
-                vm::PushSourceSegment::Argument,
+                vm::PushSourceSegment::Memory(vm::MemorySegment::Argument),
                 vm::Index::new(1),
             )),
         );
@@ -188,12 +182,15 @@ mod tests {
         easy_parser_assert(
             memory_access_command,
             "push argument 1",
-            vm::MemoryAccessCommand::Push(vm::PushSourceSegment::Argument, vm::Index::new(1)),
+            vm::MemoryAccessCommand::Push(
+                vm::PushSourceSegment::Memory(vm::MemorySegment::Argument),
+                vm::Index::new(1),
+            ),
         );
         easy_parser_assert(
             memory_access_command,
             "pop that 2",
-            vm::MemoryAccessCommand::Pop(vm::PopTargetSegment::That, vm::Index::new(2)),
+            vm::MemoryAccessCommand::Pop(vm::MemorySegment::That, vm::Index::new(2)),
         );
     }
 
@@ -202,38 +199,54 @@ mod tests {
         easy_parser_assert(
             push_source_segment,
             "argument",
-            vm::PushSourceSegment::Argument,
+            vm::PushSourceSegment::Memory(vm::MemorySegment::Argument),
         );
-        easy_parser_assert(push_source_segment, "local", vm::PushSourceSegment::Local);
-        easy_parser_assert(push_source_segment, "static", vm::PushSourceSegment::Static);
+        easy_parser_assert(
+            push_source_segment,
+            "local",
+            vm::PushSourceSegment::Memory(vm::MemorySegment::Local),
+        );
+        easy_parser_assert(
+            push_source_segment,
+            "static",
+            vm::PushSourceSegment::Memory(vm::MemorySegment::Static),
+        );
         easy_parser_assert(
             push_source_segment,
             "constant",
             vm::PushSourceSegment::Constant,
         );
-        easy_parser_assert(push_source_segment, "this", vm::PushSourceSegment::This);
-        easy_parser_assert(push_source_segment, "that", vm::PushSourceSegment::That);
+        easy_parser_assert(
+            push_source_segment,
+            "this",
+            vm::PushSourceSegment::Memory(vm::MemorySegment::This),
+        );
+        easy_parser_assert(
+            push_source_segment,
+            "that",
+            vm::PushSourceSegment::Memory(vm::MemorySegment::That),
+        );
         easy_parser_assert(
             push_source_segment,
             "pointer",
-            vm::PushSourceSegment::Pointer,
+            vm::PushSourceSegment::Memory(vm::MemorySegment::Pointer),
         );
-        easy_parser_assert(push_source_segment, "temp", vm::PushSourceSegment::Temp);
+        easy_parser_assert(
+            push_source_segment,
+            "temp",
+            vm::PushSourceSegment::Memory(vm::MemorySegment::Temp),
+        );
     }
 
     #[test]
-    fn parse_pop_target_segment() {
-        easy_parser_assert(
-            pop_target_segment,
-            "argument",
-            vm::PopTargetSegment::Argument,
-        );
-        easy_parser_assert(pop_target_segment, "local", vm::PopTargetSegment::Local);
-        easy_parser_assert(pop_target_segment, "static", vm::PopTargetSegment::Static);
-        easy_parser_assert(pop_target_segment, "this", vm::PopTargetSegment::This);
-        easy_parser_assert(pop_target_segment, "that", vm::PopTargetSegment::That);
-        easy_parser_assert(pop_target_segment, "pointer", vm::PopTargetSegment::Pointer);
-        easy_parser_assert(pop_target_segment, "temp", vm::PopTargetSegment::Temp);
+    fn parse_memory_segment() {
+        easy_parser_assert(memory_segment, "argument", vm::MemorySegment::Argument);
+        easy_parser_assert(memory_segment, "local", vm::MemorySegment::Local);
+        easy_parser_assert(memory_segment, "static", vm::MemorySegment::Static);
+        easy_parser_assert(memory_segment, "this", vm::MemorySegment::This);
+        easy_parser_assert(memory_segment, "that", vm::MemorySegment::That);
+        easy_parser_assert(memory_segment, "pointer", vm::MemorySegment::Pointer);
+        easy_parser_assert(memory_segment, "temp", vm::MemorySegment::Temp);
     }
 
     #[test]
