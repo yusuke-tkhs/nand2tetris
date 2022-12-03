@@ -18,25 +18,24 @@ pub enum ArithmeticCommand {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum MemoryAccessCommand {
-    Push(PushSourceSegment, Index),
-    Pop(MemorySegment, Index),
+pub enum AccessType {
+    Push,
+    Pop,
 }
 
-// StackにPushする元のメモリセグメント
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum PushSourceSegment {
-    Memory(MemorySegment),
-    Constant,
+pub struct MemoryAccessCommand {
+    pub access_type: AccessType,
+    pub segment: Segment,
+    pub index: Index,
 }
 
-// Constant は物理的な領域を持たない疑似セグメントなので、
-// アルゴリズムの都合でこことは分けたモデルにする
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum MemorySegment {
+pub enum Segment {
     Argument,
     Local,
     Static,
+    Constant,
     This,
     That,
     Pointer,

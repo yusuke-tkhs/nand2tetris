@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 mod assembler_code;
 mod parser;
+mod semantics;
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     // 入力されるアセンブラ言語のパス
@@ -16,10 +18,19 @@ fn main() {
 
     let input = std::fs::read_to_string(input_path).unwrap();
 
+    // 構文解析
     let vm_commands: Vec<vm::Command> = parser::parse(input).unwrap();
     dbg!(vm_commands.clone());
 
-    let assembler_commands: Vec<hack::Command> = assembler_code::construct(vm_commands).unwrap();
+    // 意味解析（コード生成処理のアルゴリズムが使いやすい形にしておく）
+    let semantic_commands: Vec<semantics::Command> = vm_commands
+        .into_iter()
+        .map(|command| semantics::Command::try_from_command(command, "file_name".to_string()))
+        .collect::<anyhow::Result<Vec<_>>>()
+        .unwrap();
+
+    let assembler_commands: Vec<hack::Command> =
+        assembler_code::construct(semantic_commands).unwrap();
 
     let assembler_code = assembler_code::generate(assembler_commands);
 
