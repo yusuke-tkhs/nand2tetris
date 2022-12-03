@@ -70,6 +70,9 @@ impl Symbol {
     pub fn new(str: &str) -> Self {
         Self(str.to_string())
     }
+    pub fn get(&self) -> &str {
+        self.0.as_str()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
