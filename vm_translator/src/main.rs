@@ -69,7 +69,7 @@ fn main() {
     let output_path: PathBuf = {
         let mut path = std::path::PathBuf::from(input_arg_path.parent().unwrap());
         path.push(format!(
-            "{}.hack",
+            "{}.asm",
             input_arg_path.file_stem().unwrap().to_str().unwrap()
         ));
         path

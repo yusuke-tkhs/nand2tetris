@@ -21,18 +21,12 @@ fn command_load_argx_to_d() -> Vec<hack::Command> {
     vec![
         // x をDレジスタにロード
         // @SP
-        // A=A-1
-        // A=A-1
+        // A=M-1
         // D=M
         hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
         hack::Command::C(hack::CCommand {
             dest: Some(hack::DestMnemonic::A),
-            comp: hack::CompMnemonic::AMinusOne,
-            jump: None,
-        }),
-        hack::Command::C(hack::CCommand {
-            dest: Some(hack::DestMnemonic::A),
-            comp: hack::CompMnemonic::AMinusOne,
+            comp: hack::CompMnemonic::MMinusOne,
             jump: None,
         }),
         hack::Command::C(hack::CCommand {
@@ -45,26 +39,44 @@ fn command_load_argx_to_d() -> Vec<hack::Command> {
 
 // スタックにある2変数関数の引数 x,y をそれぞれD, Aレジスタにロードする
 fn command_load_argxy_to_d_and_a() -> Vec<hack::Command> {
-    concat_commands! {
-        command_load_argx_to_d(),
-        vec![
-            // y をAレジスタにロード
-            // @SP
-            // A=A-1
-            // A=M
-            hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
-            hack::Command::C(hack::CCommand {
-                dest: Some(hack::DestMnemonic::A),
-                comp: hack::CompMnemonic::AMinusOne,
-                jump: None,
-            }),
-            hack::Command::C(hack::CCommand {
-                dest: Some(hack::DestMnemonic::A),
-                comp: hack::CompMnemonic::M,
-                jump: None,
-            }),
-        ]
-    }
+    vec![
+        // x をDレジスタにロード
+        // @SP
+        // A=M-1
+        // A=A-1
+        // D=M
+        hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
+        hack::Command::C(hack::CCommand {
+            dest: Some(hack::DestMnemonic::A),
+            comp: hack::CompMnemonic::MMinusOne,
+            jump: None,
+        }),
+        hack::Command::C(hack::CCommand {
+            dest: Some(hack::DestMnemonic::A),
+            comp: hack::CompMnemonic::AMinusOne,
+            jump: None,
+        }),
+        hack::Command::C(hack::CCommand {
+            dest: Some(hack::DestMnemonic::D),
+            comp: hack::CompMnemonic::M,
+            jump: None,
+        }),
+        // y をAレジスタにロード
+        // @SP
+        // A=M-1
+        // A=M
+        hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
+        hack::Command::C(hack::CCommand {
+            dest: Some(hack::DestMnemonic::A),
+            comp: hack::CompMnemonic::MMinusOne,
+            jump: None,
+        }),
+        hack::Command::C(hack::CCommand {
+            dest: Some(hack::DestMnemonic::A),
+            comp: hack::CompMnemonic::M,
+            jump: None,
+        }),
+    ]
 }
 
 // 1変数関数を実行してDレジスタに保存
@@ -196,18 +208,18 @@ fn command_exec_binary_logical_operator(
     })]
 }
 
-// Dレジスタに保存された 2 変数関数の実行結果をstackの末尾に書き込む
+// Dレジスタに保存された 2 変数関数の実行結果をstackに書き込む
 fn command_write_binary_result_to_stack() -> Vec<hack::Command> {
     vec![
         // 書き込み
         // @SP
-        // A=A-1
+        // A=M-1
         // A=A-1
         // M=D
         hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
         hack::Command::C(hack::CCommand {
             dest: Some(hack::DestMnemonic::A),
-            comp: hack::CompMnemonic::AMinusOne,
+            comp: hack::CompMnemonic::MMinusOne,
             jump: None,
         }),
         hack::Command::C(hack::CCommand {
