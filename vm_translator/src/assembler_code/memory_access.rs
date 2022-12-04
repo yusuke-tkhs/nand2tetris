@@ -2,64 +2,89 @@ use super::AssemblerCodeBlock;
 use crate::semantics;
 use schema::hack;
 
-pub fn construct(memory_access: semantics::MemoryAccess) -> Vec<AssemblerCodeBlock> {
+pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<AssemblerCodeBlock> {
     match memory_access {
-        semantics::MemoryAccess::Push(push_source) => {
+        semantics::MemoryAccessCommand::Push(push_source) => {
             // スタックにPushする値をセグメントから情報から求めてDレジスタに書き込むアセンブラ命令群
             match push_source {
                 semantics::PushSource::Constant(v) => {
-                    // 定数値をDレジスタに書き込み
-                    // それをStackにPushする
+                    // 定数値をDレジスタに書き込みそれをStackにPushする
                     vec![
                         AssemblerCodeBlock::new_header_comment(&format!("Push constant {v}")),
                         command_write_constant_to_d(v),
                         command_write_d_to_stack(),
                     ]
                 }
-                semantics::PushSource::MemorySegment(memory_segment) => {
-                    match memory_segment {
-                        semantics::MemorySegment::ByBaseAddressAndOffset { base_kind, offset } => {
-                            // ベースアドレス＋オフセット位置のメモリの値をDレジスタにロードして、
-                            // それをStackにPushする
-                            vec! [
-                                AssemblerCodeBlock::new_header_comment(&format!("Push value in memory segment '{base_kind:?}' + offset({offset})")),
-                                command_write_base_plus_offset_address_to_d(base_kind, offset),
-                                command_load_value_specified_by_address_in_d(),
-                                command_write_d_to_stack(),
-                            ]
-                        }
-                        semantics::MemorySegment::ByCustomSymbol(symbol_name) => {
-                            // 命名規則に従ったシンボル名を変数として定義し、
-                            // そのシンボル位置にある値をDレジスタにロードした後、StackにPushする
-                            vec![
-                                AssemblerCodeBlock::new_header_comment(&format!(
-                                    "Push value in symbol '{symbol_name}'"
-                                )),
-                                command_write_custom_symbol_to_d(symbol_name),
-                                command_write_d_to_stack(),
-                            ]
-                        }
-                    }
+                semantics::PushSource::SymbolMapping(symbol_name) => {
+                    vec![
+                        AssemblerCodeBlock::new_header_comment(&format!(
+                            "Push value in symbol '{symbol_name}'"
+                        )),
+                        command_write_custom_symbol_to_d(symbol_name),
+                        command_write_d_to_stack(),
+                    ]
+                }
+                semantics::PushSource::DirectAddress {
+                    mapping_type,
+                    offset,
+                } => {
+                    vec![
+                        AssemblerCodeBlock::new_header_comment(&format!(
+                            "Push value in directly mapped memory segment '{mapping_type:?}' + offset {offset}"
+                        )),
+                        command_write_direct_address_to_d(mapping_type, offset),
+                        command_load_value_specified_by_address_in_d(),
+                        command_write_d_to_stack(),
+                    ]
+                }
+                semantics::PushSource::IndirectAddress {
+                    mapping_type,
+                    offset,
+                } => {
+                    // 間接アドレス値をDレジスタにロードして、それをStackにPushする
+                    vec![
+                        AssemblerCodeBlock::new_header_comment(&format!(
+                            "Push value in in-directly mapped memory segment '{mapping_type:?}' + offset({offset})"
+                        )),
+                        command_write_indirect_address_to_d(mapping_type, offset),
+                        command_load_value_specified_by_address_in_d(),
+                        command_write_d_to_stack(),
+                    ]
                 }
             }
         }
-        semantics::MemoryAccess::Pop(memory_segment) => match memory_segment {
+        semantics::MemoryAccessCommand::Pop(pop_target) => match pop_target {
             // stack からのPopを実現する命令群
-            semantics::MemorySegment::ByBaseAddressAndOffset { base_kind, offset } => {
-                vec![
-                    AssemblerCodeBlock::new_header_comment(&format!(
-                        "Pop value to memory segment '{base_kind:?}' + offset({offset})"
-                    )),
-                    command_write_base_plus_offset_address_to_d(base_kind, offset),
-                    command_pop_to_address_written_in_d(),
-                ]
-            }
-            semantics::MemorySegment::ByCustomSymbol(symbol_name) => {
+            semantics::PopTarget::SymbolMapping(symbol_name) => {
                 vec![
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to symbol '{symbol_name}'"
                     )),
                     command_write_custom_symbol_to_d(symbol_name),
+                    command_pop_to_address_written_in_d(),
+                ]
+            }
+            semantics::PopTarget::DirectAddress {
+                mapping_type,
+                offset,
+            } => {
+                vec![
+                    AssemblerCodeBlock::new_header_comment(&format!(
+                        "Pop value to directly mapped memory segment '{mapping_type:?}' + offset {offset}"
+                    )),
+                    command_write_direct_address_to_d(mapping_type, offset),
+                    command_pop_to_address_written_in_d(),
+                ]
+            }
+            semantics::PopTarget::IndirectAddress {
+                mapping_type,
+                offset,
+            } => {
+                vec![
+                    AssemblerCodeBlock::new_header_comment(&format!(
+                        "Pop value to in-directly mapped memory segment '{mapping_type:?}' + offset({offset})"
+                    )),
+                    command_write_indirect_address_to_d(mapping_type, offset),
                     command_pop_to_address_written_in_d(),
                 ]
             }
@@ -97,17 +122,6 @@ fn command_write_d_to_stack() -> AssemblerCodeBlock {
             }),
         ],
     )
-}
-
-fn base_kind_to_symbol(src: semantics::MemorySegmentBaseKind) -> hack::Symbol {
-    match src {
-        semantics::MemorySegmentBaseKind::Argument => hack::Symbol::new("ARG"),
-        semantics::MemorySegmentBaseKind::Local => hack::Symbol::new("LCL"),
-        semantics::MemorySegmentBaseKind::This => hack::Symbol::new("THIS"),
-        semantics::MemorySegmentBaseKind::That => hack::Symbol::new("THAT"),
-        semantics::MemorySegmentBaseKind::Pointer => hack::Symbol::new("R3"),
-        semantics::MemorySegmentBaseKind::Temp => hack::Symbol::new("R5"),
-    }
 }
 
 // 定数値をDレジスタに書き込む
@@ -150,11 +164,11 @@ fn command_load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
     )
 }
 
+// symbol 値のアドレスが指し示す値をDレジスタに書き込む
 fn command_write_custom_symbol_to_d(symbol_name: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "write value specified by Symbol to D register",
         &[
-            // custom symbol の値をDレジスタに書き込む
             // @symbol
             // D=M
             hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(
@@ -169,9 +183,44 @@ fn command_write_custom_symbol_to_d(symbol_name: String) -> AssemblerCodeBlock {
     )
 }
 
-// base + offset で求まるアドレス値をDレジスタに書き込む
-fn command_write_base_plus_offset_address_to_d(
-    base_kind: semantics::MemorySegmentBaseKind,
+// base + offset で求まる直接アドレス値をDレジスタに書き込む
+fn command_write_direct_address_to_d(
+    mapping_type: semantics::DirectMappingType,
+    offset: u16,
+) -> AssemblerCodeBlock {
+    AssemblerCodeBlock::new(
+        "compute direct address by base + offset, and write to D register",
+        &[
+            // ベースアドレス取得
+            // @R3 or R5
+            // D=A
+            hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(
+                match mapping_type {
+                    semantics::DirectMappingType::Pointer => "R3",
+                    semantics::DirectMappingType::Temp => "R5",
+                },
+            ))),
+            hack::Command::C(hack::CCommand {
+                dest: Some(hack::DestMnemonic::D),
+                comp: hack::CompMnemonic::A,
+                jump: None,
+            }),
+            // ベースアドレスにインデックスを加算してpop先アドレスを求める
+            // @offset
+            // D=D+A
+            hack::Command::A(hack::ACommand::Address(offset)),
+            hack::Command::C(hack::CCommand {
+                dest: Some(hack::DestMnemonic::D),
+                comp: hack::CompMnemonic::DPlusA,
+                jump: None,
+            }),
+        ],
+    )
+}
+
+// base + offset で求まる間接アドレス値をDレジスタに書き込む
+fn command_write_indirect_address_to_d(
+    mapping_type: semantics::InDirectMappingType,
     offset: u16,
 ) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
@@ -180,7 +229,14 @@ fn command_write_base_plus_offset_address_to_d(
             // セグメントのベースアドレス取得
             // @ARG
             // D=M
-            hack::Command::A(hack::ACommand::Symbol(base_kind_to_symbol(base_kind))),
+            hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(
+                match mapping_type {
+                    semantics::InDirectMappingType::Argument => "ARG",
+                    semantics::InDirectMappingType::Local => "LCL",
+                    semantics::InDirectMappingType::This => "THIS",
+                    semantics::InDirectMappingType::That => "THAT",
+                },
+            ))),
             hack::Command::C(hack::CCommand {
                 dest: Some(hack::DestMnemonic::D),
                 comp: hack::CompMnemonic::M,
@@ -202,7 +258,7 @@ fn command_write_base_plus_offset_address_to_d(
 // Dレジスタに保存されたアドレスのメモリ位置にStackから値をPopする
 fn command_pop_to_address_written_in_d() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
-        "pop value to memory segment specified by D register",
+        "pop value to memory address specified by D register",
         &[
             // Dレジスタに保存されているpop先アドレスをRAM[13]に退避
             hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("R13"))),
