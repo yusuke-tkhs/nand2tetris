@@ -6,21 +6,21 @@ pub fn construct(arithmetic_command: semantics::ArithmeticCommand) -> Vec<Assemb
     match arithmetic_command {
         semantics::ArithmeticCommand::UnaryOperator(unary_operator) => vec![
             AssemblerCodeBlock::new_header_comment("Arithmetic command (Unary Operator)"),
-            command_load_argx_to_d(),
-            command_exec_unary_operator(unary_operator),
-            command_write_unary_result_to_stack(),
+            load_argx_to_d(),
+            exec_unary_operator(unary_operator),
+            write_unary_result_to_stack(),
         ],
         semantics::ArithmeticCommand::BinaryOperator(binary_operator) => vec![
             AssemblerCodeBlock::new_header_comment("Arithmetic command (Binary Operator)"),
-            command_load_argxy_to_d_and_a(),
-            command_exec_binary_operator(binary_operator),
-            command_write_binary_result_to_stack(),
+            load_argxy_to_d_and_a(),
+            exec_binary_operator(binary_operator),
+            write_binary_result_to_stack(),
         ],
     }
 }
 
 // スタックにある1変数関数の引数 x をDレジスタにロードする
-fn command_load_argx_to_d() -> AssemblerCodeBlock {
+fn load_argx_to_d() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load x on D register",
         &[
@@ -44,7 +44,7 @@ fn command_load_argx_to_d() -> AssemblerCodeBlock {
 }
 
 // スタックにある2変数関数の引数 x,y をそれぞれD, Aレジスタにロードする
-fn command_load_argxy_to_d_and_a() -> AssemblerCodeBlock {
+fn load_argxy_to_d_and_a() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load x on D register, and load y on A register",
         &[
@@ -89,7 +89,7 @@ fn command_load_argxy_to_d_and_a() -> AssemblerCodeBlock {
 }
 
 // 1変数関数を実行してDレジスタに保存
-fn command_exec_unary_operator(operator: semantics::UnaryOperator) -> AssemblerCodeBlock {
+fn exec_unary_operator(operator: semantics::UnaryOperator) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "execute unary operator",
         &[
@@ -107,7 +107,7 @@ fn command_exec_unary_operator(operator: semantics::UnaryOperator) -> AssemblerC
 }
 
 // Dレジスタに保存された 1 変数関数の実行結果をstackの末尾に書き込む
-fn command_write_unary_result_to_stack() -> AssemblerCodeBlock {
+fn write_unary_result_to_stack() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "write result of unary operation to stack",
         &[
@@ -130,21 +130,19 @@ fn command_write_unary_result_to_stack() -> AssemblerCodeBlock {
 }
 
 // 2変数関数を実行してDレジスタに保存
-fn command_exec_binary_operator(operator: semantics::BinaryOperator) -> AssemblerCodeBlock {
+fn exec_binary_operator(operator: semantics::BinaryOperator) -> AssemblerCodeBlock {
     match operator {
         semantics::BinaryOperator::Mathmatical(math_op) => {
-            command_exec_binary_mathmatical_operator(math_op)
+            exec_binary_mathmatical_operator(math_op)
         }
         semantics::BinaryOperator::Comparison(comp_op, unique_key) => {
-            command_exec_binary_comparison_operator(comp_op, unique_key)
+            exec_binary_comparison_operator(comp_op, unique_key)
         }
-        semantics::BinaryOperator::Logical(logical_op) => {
-            command_exec_binary_logical_operator(logical_op)
-        }
+        semantics::BinaryOperator::Logical(logical_op) => exec_binary_logical_operator(logical_op),
     }
 }
 
-fn command_exec_binary_mathmatical_operator(
+fn exec_binary_mathmatical_operator(
     operator: semantics::BinaryMathmaticalOperator,
 ) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
@@ -160,7 +158,7 @@ fn command_exec_binary_mathmatical_operator(
     )
 }
 
-fn command_exec_binary_comparison_operator(
+fn exec_binary_comparison_operator(
     operator: semantics::BinaryComparisonOperator,
     unique_key: String,
 ) -> AssemblerCodeBlock {
@@ -216,9 +214,7 @@ fn command_exec_binary_comparison_operator(
     )
 }
 
-fn command_exec_binary_logical_operator(
-    operator: semantics::BinaryLogicalOperator,
-) -> AssemblerCodeBlock {
+fn exec_binary_logical_operator(operator: semantics::BinaryLogicalOperator) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "execute binary logical operator",
         &[hack::Command::C(hack::CCommand {
@@ -233,7 +229,7 @@ fn command_exec_binary_logical_operator(
 }
 
 // Dレジスタに保存された 2 変数関数の実行結果をstackに書き込む
-fn command_write_binary_result_to_stack() -> AssemblerCodeBlock {
+fn write_binary_result_to_stack() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "write result of binary operation to stack",
         &[

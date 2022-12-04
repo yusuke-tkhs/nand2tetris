@@ -11,8 +11,8 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     // 定数値をDレジスタに書き込みそれをStackにPushする
                     vec![
                         AssemblerCodeBlock::new_header_comment(&format!("Push constant {v}")),
-                        command_load_constant_to_d(v),
-                        command_write_d_to_stack(),
+                        load_constant_to_d(v),
+                        write_d_to_stack(),
                     ]
                 }
                 semantics::PushSource::SymbolMapping(symbol_name) => {
@@ -20,8 +20,8 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                         AssemblerCodeBlock::new_header_comment(&format!(
                             "Push value in symbol '{symbol_name}'"
                         )),
-                        command_load_value_to_d_by_symbol_address(symbol_name),
-                        command_write_d_to_stack(),
+                        load_value_to_d_by_symbol_address(symbol_name),
+                        write_d_to_stack(),
                     ]
                 }
                 semantics::PushSource::DirectAddress {
@@ -32,9 +32,9 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                         AssemblerCodeBlock::new_header_comment(&format!(
                             "Push value in directly mapped memory segment '{mapping_type:?}' + offset {offset}"
                         )),
-                        command_load_direct_address_to_d(mapping_type, offset),
-                        command_load_value_specified_by_address_in_d(),
-                        command_write_d_to_stack(),
+                        load_direct_address_to_d(mapping_type, offset),
+                        load_value_specified_by_address_in_d(),
+                        write_d_to_stack(),
                     ]
                 }
                 semantics::PushSource::IndirectAddress {
@@ -46,9 +46,9 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                         AssemblerCodeBlock::new_header_comment(&format!(
                             "Push value in in-directly mapped memory segment '{mapping_type:?}' + offset({offset})"
                         )),
-                        command_load_indirect_address_to_d(mapping_type, offset),
-                        command_load_value_specified_by_address_in_d(),
-                        command_write_d_to_stack(),
+                        load_indirect_address_to_d(mapping_type, offset),
+                        load_value_specified_by_address_in_d(),
+                        write_d_to_stack(),
                     ]
                 }
             }
@@ -60,8 +60,8 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to symbol '{symbol_name}'"
                     )),
-                    command_load_symbol_value_to_d(symbol_name),
-                    command_pop_to_address_written_in_d(),
+                    load_symbol_value_to_d(symbol_name),
+                    pop_to_address_written_in_d(),
                 ]
             }
             semantics::PopTarget::DirectAddress {
@@ -72,8 +72,8 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to directly mapped memory segment '{mapping_type:?}' + offset {offset}"
                     )),
-                    command_load_direct_address_to_d(mapping_type, offset),
-                    command_pop_to_address_written_in_d(),
+                    load_direct_address_to_d(mapping_type, offset),
+                    pop_to_address_written_in_d(),
                 ]
             }
             semantics::PopTarget::IndirectAddress {
@@ -84,8 +84,8 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to in-directly mapped memory segment '{mapping_type:?}' + offset({offset})"
                     )),
-                    command_load_indirect_address_to_d(mapping_type, offset),
-                    command_pop_to_address_written_in_d(),
+                    load_indirect_address_to_d(mapping_type, offset),
+                    pop_to_address_written_in_d(),
                 ]
             }
         },
@@ -93,7 +93,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
 }
 
 // スタックポインタが示すメモリ位置にDレジスタの値を書き込むコマンド
-fn command_write_d_to_stack() -> AssemblerCodeBlock {
+fn write_d_to_stack() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "push D register value to stack",
         &[
@@ -127,7 +127,7 @@ fn command_write_d_to_stack() -> AssemblerCodeBlock {
 // 定数値をDレジスタに書き込む
 // @index
 // D=A
-fn command_load_constant_to_d(value: u16) -> AssemblerCodeBlock {
+fn load_constant_to_d(value: u16) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         format!("load constant value {value} to D register").as_str(),
         &[
@@ -143,7 +143,7 @@ fn command_load_constant_to_d(value: u16) -> AssemblerCodeBlock {
 
 // Dレジスタに保存されたアドレス値が指し示す
 // メモリ位置の値をDレジスタに書き込む
-fn command_load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
+fn load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load value specified by address in D register to D register",
         &[
@@ -165,7 +165,7 @@ fn command_load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
 }
 
 // symbol 値のアドレスが指し示す値をDレジスタに書き込む
-fn command_load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCodeBlock {
+fn load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load value to D register by symbol address",
         &[
@@ -184,7 +184,7 @@ fn command_load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCo
 }
 
 // symbol 値自体をDレジスタに書き込む
-fn command_load_symbol_value_to_d(symbol_name: String) -> AssemblerCodeBlock {
+fn load_symbol_value_to_d(symbol_name: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load symbol value to D register",
         &[
@@ -203,7 +203,7 @@ fn command_load_symbol_value_to_d(symbol_name: String) -> AssemblerCodeBlock {
 }
 
 // base + offset で求まる直接アドレス値をDレジスタに書き込む
-fn command_load_direct_address_to_d(
+fn load_direct_address_to_d(
     mapping_type: semantics::DirectMappingType,
     offset: u16,
 ) -> AssemblerCodeBlock {
@@ -238,7 +238,7 @@ fn command_load_direct_address_to_d(
 }
 
 // base + offset で求まる間接アドレス値をDレジスタに書き込む
-fn command_load_indirect_address_to_d(
+fn load_indirect_address_to_d(
     mapping_type: semantics::InDirectMappingType,
     offset: u16,
 ) -> AssemblerCodeBlock {
@@ -275,7 +275,7 @@ fn command_load_indirect_address_to_d(
 }
 
 // Dレジスタに保存されたアドレスのメモリ位置にStackから値をPopする
-fn command_pop_to_address_written_in_d() -> AssemblerCodeBlock {
+fn pop_to_address_written_in_d() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "pop value to memory address specified by D register",
         &[
