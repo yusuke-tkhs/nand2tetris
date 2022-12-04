@@ -112,12 +112,12 @@ fn command_write_unary_result_to_stack() -> AssemblerCodeBlock {
         "write result of unary operation to stack",
         &[
             // @SP
-            // A=A-1
+            // A=M-1
             // M=D
             hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
             hack::Command::C(hack::CCommand {
                 dest: Some(hack::DestMnemonic::A),
-                comp: hack::CompMnemonic::AMinusOne,
+                comp: hack::CompMnemonic::MMinusOne,
                 jump: None,
             }),
             hack::Command::C(hack::CCommand {
