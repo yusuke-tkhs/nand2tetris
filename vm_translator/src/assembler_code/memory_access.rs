@@ -213,12 +213,12 @@ fn command_pop_to_address_written_in_d() -> AssemblerCodeBlock {
             }),
             // スタックポインタの値 - 1の位置の値（スタックの最後の要素）の値をDレジスタに格納する
             // @SP
-            // A=A-1
+            // A=M-1
             // D=M
             hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
             hack::Command::C(hack::CCommand {
                 dest: Some(hack::DestMnemonic::A),
-                comp: hack::CompMnemonic::AMinusOne,
+                comp: hack::CompMnemonic::MMinusOne,
                 jump: None,
             }),
             hack::Command::C(hack::CCommand {
