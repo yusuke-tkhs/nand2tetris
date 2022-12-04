@@ -186,8 +186,8 @@ fn command_exec_binary_comparison_operator(
             }),
             hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(&true_label))),
             hack::Command::C(hack::CCommand {
-                dest: Some(hack::DestMnemonic::D),
-                comp: hack::CompMnemonic::DMinusA,
+                dest: None,
+                comp: hack::CompMnemonic::D,
                 jump: Some(match operator {
                     semantics::BinaryComparisonOperator::Equal => hack::JumpMnemonic::JEQ,
                     semantics::BinaryComparisonOperator::GreaterThan => hack::JumpMnemonic::JGT,
