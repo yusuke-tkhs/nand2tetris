@@ -11,7 +11,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     // 定数値をDレジスタに書き込みそれをStackにPushする
                     vec![
                         AssemblerCodeBlock::new_header_comment(&format!("Push constant {v}")),
-                        command_write_constant_to_d(v),
+                        command_load_constant_to_d(v),
                         command_write_d_to_stack(),
                     ]
                 }
@@ -20,7 +20,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                         AssemblerCodeBlock::new_header_comment(&format!(
                             "Push value in symbol '{symbol_name}'"
                         )),
-                        command_write_custom_symbol_to_d(symbol_name),
+                        command_load_value_to_d_by_symbol_address(symbol_name),
                         command_write_d_to_stack(),
                     ]
                 }
@@ -32,7 +32,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                         AssemblerCodeBlock::new_header_comment(&format!(
                             "Push value in directly mapped memory segment '{mapping_type:?}' + offset {offset}"
                         )),
-                        command_write_direct_address_to_d(mapping_type, offset),
+                        command_load_direct_address_to_d(mapping_type, offset),
                         command_load_value_specified_by_address_in_d(),
                         command_write_d_to_stack(),
                     ]
@@ -46,7 +46,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                         AssemblerCodeBlock::new_header_comment(&format!(
                             "Push value in in-directly mapped memory segment '{mapping_type:?}' + offset({offset})"
                         )),
-                        command_write_indirect_address_to_d(mapping_type, offset),
+                        command_load_indirect_address_to_d(mapping_type, offset),
                         command_load_value_specified_by_address_in_d(),
                         command_write_d_to_stack(),
                     ]
@@ -60,7 +60,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to symbol '{symbol_name}'"
                     )),
-                    command_write_custom_symbol_to_d(symbol_name),
+                    command_load_symbol_value_to_d(symbol_name),
                     command_pop_to_address_written_in_d(),
                 ]
             }
@@ -72,7 +72,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to directly mapped memory segment '{mapping_type:?}' + offset {offset}"
                     )),
-                    command_write_direct_address_to_d(mapping_type, offset),
+                    command_load_direct_address_to_d(mapping_type, offset),
                     command_pop_to_address_written_in_d(),
                 ]
             }
@@ -84,7 +84,7 @@ pub fn construct(memory_access: semantics::MemoryAccessCommand) -> Vec<Assembler
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to in-directly mapped memory segment '{mapping_type:?}' + offset({offset})"
                     )),
-                    command_write_indirect_address_to_d(mapping_type, offset),
+                    command_load_indirect_address_to_d(mapping_type, offset),
                     command_pop_to_address_written_in_d(),
                 ]
             }
@@ -127,9 +127,9 @@ fn command_write_d_to_stack() -> AssemblerCodeBlock {
 // 定数値をDレジスタに書き込む
 // @index
 // D=A
-fn command_write_constant_to_d(value: u16) -> AssemblerCodeBlock {
+fn command_load_constant_to_d(value: u16) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
-        format!("write constant value {value} to D register").as_str(),
+        format!("load constant value {value} to D register").as_str(),
         &[
             hack::Command::A(hack::ACommand::Address(value)),
             hack::Command::C(hack::CCommand {
@@ -165,9 +165,9 @@ fn command_load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
 }
 
 // symbol 値のアドレスが指し示す値をDレジスタに書き込む
-fn command_write_custom_symbol_to_d(symbol_name: String) -> AssemblerCodeBlock {
+fn command_load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
-        "write value specified by Symbol to D register",
+        "load value to D register by symbol address",
         &[
             // @symbol
             // D=M
@@ -183,13 +183,32 @@ fn command_write_custom_symbol_to_d(symbol_name: String) -> AssemblerCodeBlock {
     )
 }
 
+// symbol 値自体をDレジスタに書き込む
+fn command_load_symbol_value_to_d(symbol_name: String) -> AssemblerCodeBlock {
+    AssemblerCodeBlock::new(
+        "load symbol value to D register",
+        &[
+            // @symbol
+            // D=A
+            hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(
+                symbol_name.as_str(),
+            ))),
+            hack::Command::C(hack::CCommand {
+                dest: Some(hack::DestMnemonic::D),
+                comp: hack::CompMnemonic::A,
+                jump: None,
+            }),
+        ],
+    )
+}
+
 // base + offset で求まる直接アドレス値をDレジスタに書き込む
-fn command_write_direct_address_to_d(
+fn command_load_direct_address_to_d(
     mapping_type: semantics::DirectMappingType,
     offset: u16,
 ) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
-        "compute direct address by base + offset, and write to D register",
+        "compute direct address by base + offset, and load to D register",
         &[
             // ベースアドレス取得
             // @R3 or R5
@@ -219,12 +238,12 @@ fn command_write_direct_address_to_d(
 }
 
 // base + offset で求まる間接アドレス値をDレジスタに書き込む
-fn command_write_indirect_address_to_d(
+fn command_load_indirect_address_to_d(
     mapping_type: semantics::InDirectMappingType,
     offset: u16,
 ) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
-        "compute address by base + offset, and write to D register",
+        "compute address by base + offset, and load to D register",
         &[
             // セグメントのベースアドレス取得
             // @ARG
