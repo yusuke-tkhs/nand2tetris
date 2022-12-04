@@ -1,5 +1,5 @@
 use core::panic;
-use schema::{hack, vm};
+use schema::vm;
 use std::path::{Path, PathBuf};
 
 mod assembler_code;
@@ -7,7 +7,9 @@ mod file_context;
 mod parser;
 mod semantics;
 
-fn construct_assembler_command(input_path: impl AsRef<Path>) -> Vec<hack::Command> {
+fn construct_assembler_code_blocks(
+    input_path: impl AsRef<Path>,
+) -> Vec<assembler_code::AssemblerCodeBlock> {
     let input = std::fs::read_to_string(input_path.as_ref()).unwrap();
 
     // 構文解析
@@ -27,8 +29,8 @@ fn construct_assembler_command(input_path: impl AsRef<Path>) -> Vec<hack::Comman
         .collect::<anyhow::Result<Vec<_>>>()
         .unwrap();
 
-    // アセンブラコードのスキーマへの変換
-    assembler_code::construct(semantic_commands).unwrap()
+    // アセンブラコード塊への変換
+    assembler_code::construct_code_block(semantic_commands).unwrap()
 }
 
 fn main() {
@@ -36,7 +38,8 @@ fn main() {
 
     let input_arg_path: &Path = Path::new(args.get(1).unwrap());
 
-    let assembler_commands: Vec<hack::Command> = if input_arg_path.is_dir() {
+    let assembler_code_blocks: Vec<assembler_code::AssemblerCodeBlock> = if input_arg_path.is_dir()
+    {
         let input_files: Vec<PathBuf> = std::fs::read_dir(input_arg_path)
             .unwrap()
             .into_iter()
@@ -51,19 +54,18 @@ fn main() {
 
         input_files
             .into_iter()
-            .flat_map(construct_assembler_command)
+            .flat_map(construct_assembler_code_blocks)
             .collect()
     } else if input_arg_path.is_file() {
         if input_arg_path.extension().unwrap() != std::ffi::OsStr::new("vm") {
             panic!("input file has to be .vm file");
         }
-
-        construct_assembler_command(input_arg_path)
+        construct_assembler_code_blocks(input_arg_path)
     } else {
         panic!("First argument has to be file path or directory path.")
     };
 
-    let assembler_code = assembler_code::generate(assembler_commands);
+    let assembler_code = assembler_code::genarate_code_str(assembler_code_blocks);
 
     // vm言語から生成されたアセンブリ言語を出力するパス
     let output_path: PathBuf = {
