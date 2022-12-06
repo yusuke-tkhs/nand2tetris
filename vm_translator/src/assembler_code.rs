@@ -56,7 +56,7 @@ impl AssemblerCodeComment {
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum AssemblerCodeLine {
     Command(hack::Command, Option<AssemblerCodeComment>), // @SP // ROM 0 みたいな行
-    Comment(AssemblerCodeComment), // [Push static 3] みたいな行
+    Comment(AssemblerCodeComment),                        // [Push static 3] みたいな行
 }
 
 impl AssemblerCodeLine {

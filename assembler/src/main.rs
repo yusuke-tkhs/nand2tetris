@@ -3,7 +3,6 @@ use schema::hack;
 use std::path::{Path, PathBuf};
 
 mod machine_code;
-mod parser;
 mod symbol_table;
 
 fn main() {
@@ -18,7 +17,7 @@ fn main() {
 
     let input = std::fs::read_to_string(input_path).unwrap();
 
-    let commands: Vec<hack::Command> = parser::parse(&input).unwrap();
+    let commands: Vec<hack::Command> = hack::parse(input).unwrap();
 
     let symbol_table = symbol_table::SymbolTable::new(&commands);
 

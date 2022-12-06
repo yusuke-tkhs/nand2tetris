@@ -1,3 +1,7 @@
+mod parser;
+
+pub use parser::parse;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Command {
     Arithmetic(ArithmeticCommand),

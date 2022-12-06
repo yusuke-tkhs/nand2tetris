@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 
 mod assembler_code;
 mod file_context;
-mod parser;
 mod semantics;
 
 fn construct_assembler_code_blocks(
@@ -13,7 +12,7 @@ fn construct_assembler_code_blocks(
     let input = std::fs::read_to_string(input_path.as_ref()).unwrap();
 
     // 構文解析
-    let vm_commands: Vec<vm::Command> = parser::parse(input).unwrap();
+    let vm_commands: Vec<vm::Command> = vm::parse(input).unwrap();
 
     // 意味解析（コード生成処理のアルゴリズムが使いやすい形にしておく）
     let mut file_context = file_context::FileContext::new(
@@ -30,6 +29,7 @@ fn construct_assembler_code_blocks(
         .unwrap();
 
     // アセンブラコード塊への変換
+    // TODO こちらでFileContext受け取るようにも出来るはずで、そうすると大分設計がシンプルになるかも
     assembler_code::construct_code_block(semantic_commands).unwrap()
 }
 

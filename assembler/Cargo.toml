@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 anyhow = {workspace = true}
-combine = {workspace = true}
 schema = {workspace = true}

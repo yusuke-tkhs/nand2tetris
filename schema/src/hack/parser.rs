@@ -1,5 +1,6 @@
-mod pre_processor;
-
+use crate::hack::*;
+use crate::parser::{easily_parse, returns};
+use crate::pre_processor;
 use combine::error::ParseError;
 use combine::error::StreamError;
 use combine::parser::char::string;
@@ -8,17 +9,20 @@ use combine::parser::repeat::{many, many1};
 use combine::parser::Parser;
 use combine::stream::RangeStream;
 use combine::stream::StreamOnce;
-use combine::EasyParser;
 use combine::{attempt, between, one_of, optional, token};
-use schema::hack::*;
 
-fn returns<'a, I, T, U>(p: impl Parser<I, Output = T>, constant: U) -> impl Parser<I, Output = U>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-    U: Clone,
-{
-    p.map(move |_| constant.clone())
+pub fn parse(input: String) -> anyhow::Result<Vec<Command>> {
+    pre_process(input)
+        .map(|line| easily_parse(command, line.as_str()))
+        .collect::<anyhow::Result<Vec<_>>>()
+}
+
+fn pre_process(input: String) -> impl Iterator<Item = String> {
+    use pre_processor::*;
+    split_by_newline(input)
+        .map(remove_whitespace)
+        .map(remove_comment)
+        .filter(non_empty_line)
 }
 
 fn dest_mnemonic<'a, I>() -> impl Parser<I, Output = DestMnemonic>
@@ -164,45 +168,10 @@ where
         .or(c_command().map(Command::C))
 }
 
-fn easily_parse<'a, I, T, F, Fout>(parser_generator: F, input: I) -> anyhow::Result<T>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    F: Fn() -> Fout,
-    Fout: EasyParser<I, Output = T>,
-    T: PartialEq + std::fmt::Debug + Clone,
-    <I as StreamOnce>::Position: Default + std::fmt::Debug + std::fmt::Display + Sync + Send,
-{
-    let parsed = parser_generator()
-        .easy_parse(input)
-        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
-    Ok(parsed.0)
-}
-
-pub fn parse(input: &str) -> anyhow::Result<Vec<Command>> {
-    pre_processor::pre_process(input)
-        .iter()
-        .map(|line| easily_parse(command, line.as_str()))
-        .collect::<anyhow::Result<Vec<_>>>()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[allow(dead_code)]
-    fn easy_parser_assert<'a, I, T, F, Fout>(parser_generator: F, input: I, expected: T)
-    where
-        I: RangeStream<Token = char, Range = &'a str>,
-        F: Fn() -> Fout,
-        Fout: EasyParser<I, Output = T>,
-        T: PartialEq + std::fmt::Debug,
-        <I as StreamOnce>::Position: Default + std::fmt::Debug,
-    {
-        match parser_generator().easy_parse(input) {
-            Ok((output, _)) => assert_eq!(output, expected),
-            Err(e) => panic!("{:?}", e),
-        }
-    }
+    use crate::parser::tests::easy_parser_assert;
 
     #[test]
     fn parse_dest() {
