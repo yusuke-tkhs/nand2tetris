@@ -1,15 +1,14 @@
 use crate::constant::DIGIT_CHAR;
 use crate::hack::*;
-use crate::parser::{easily_parse, returns};
+use crate::parser::{easily_parse, AndThenError};
 use crate::pre_processor;
-use combine::error::ParseError;
 use combine::error::StreamError;
+use combine::parser;
 use combine::parser::char::string;
 use combine::parser::choice::choice;
 use combine::parser::repeat::{many, many1};
-use combine::parser::Parser;
-use combine::stream::RangeStream;
-use combine::stream::StreamOnce;
+use combine::parser::token::value;
+use combine::Stream;
 use combine::{attempt, between, one_of, optional, token};
 
 pub fn parse(input: String) -> anyhow::Result<Vec<Command>> {
@@ -26,146 +25,140 @@ fn pre_process(input: String) -> impl Iterator<Item = String> {
         .filter(non_empty_line)
 }
 
-fn dest_mnemonic<'a, I>() -> impl Parser<I, Output = DestMnemonic>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    choice((
-        attempt(returns(string("AMD"), DestMnemonic::AMD)),
-        attempt(returns(string("AD"), DestMnemonic::AD)),
-        attempt(returns(string("AM"), DestMnemonic::AM)),
-        attempt(returns(string("A"), DestMnemonic::A)),
-        attempt(returns(string("MD"), DestMnemonic::MD)),
-        attempt(returns(string("M"), DestMnemonic::M)),
-        attempt(returns(string("D"), DestMnemonic::D)),
-        attempt(returns(string("null"), DestMnemonic::Null)),
-    ))
+parser! {
+    fn dest_mnemonic[Input]()(Input) -> DestMnemonic
+    where [Input: Stream<Token = char>]
+    {
+        choice((
+            attempt(string("AMD").with(value(DestMnemonic::AMD))),
+            attempt(string("AD").with(value(DestMnemonic::AD)), ),
+            attempt(string("AM").with(value(DestMnemonic::AM)), ),
+            attempt(string("A").with(value(DestMnemonic::A)), ),
+            attempt(string("MD").with(value(DestMnemonic::MD)), ),
+            attempt(string("M").with(value(DestMnemonic::M)), ),
+            attempt(string("D").with(value(DestMnemonic::D)), ),
+            attempt(string("null").with(value(DestMnemonic::Null)), ),
+        ))
+    }
 }
 
-fn comp_mnemonic<'a, I>() -> impl Parser<I, Output = CompMnemonic>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    choice([
-        // この順番じゃないとだめ（DをD|Mより先にパースを試みてはいけない）
-        attempt(returns(string("D|M"), CompMnemonic::DOrM)),
-        attempt(returns(string("D&M"), CompMnemonic::DAndM)),
-        attempt(returns(string("M-D"), CompMnemonic::MMinusD)),
-        attempt(returns(string("D-M"), CompMnemonic::DMinusM)),
-        attempt(returns(string("D+M"), CompMnemonic::DPlusM)),
-        attempt(returns(string("M-1"), CompMnemonic::MMinusOne)),
-        attempt(returns(string("M+1"), CompMnemonic::MPlusOne)),
-        attempt(returns(string("-M"), CompMnemonic::MinusM)),
-        attempt(returns(string("!M"), CompMnemonic::NegateM)),
-        attempt(returns(string("M"), CompMnemonic::M)),
-        attempt(returns(string("D|A"), CompMnemonic::DOrA)),
-        attempt(returns(string("D&A"), CompMnemonic::DAndA)),
-        attempt(returns(string("A-D"), CompMnemonic::AMinusD)),
-        attempt(returns(string("D-A"), CompMnemonic::DMinusA)),
-        attempt(returns(string("D+A"), CompMnemonic::DPlusA)),
-        attempt(returns(string("A-1"), CompMnemonic::AMinusOne)),
-        attempt(returns(string("D-1"), CompMnemonic::DMinusOne)),
-        attempt(returns(string("A+1"), CompMnemonic::APlusOne)),
-        attempt(returns(string("D+1"), CompMnemonic::DPlusOne)),
-        attempt(returns(string("!A"), CompMnemonic::NegateA)),
-        attempt(returns(string("!D"), CompMnemonic::NegateD)),
-        attempt(returns(string("-A"), CompMnemonic::MinusA)),
-        attempt(returns(string("-D"), CompMnemonic::MinusD)),
-        attempt(returns(string("A"), CompMnemonic::A)),
-        attempt(returns(string("D"), CompMnemonic::D)),
-        attempt(returns(string("1"), CompMnemonic::One)),
-        attempt(returns(string("-1"), CompMnemonic::MinusOne)),
-        attempt(returns(string("0"), CompMnemonic::Zero)),
-    ])
+parser! {
+    fn comp_mnemonic[Input]()(Input) -> CompMnemonic
+    where [Input: Stream<Token = char>]
+    {
+        choice([
+            // この順番じゃないとだめ（DをD|Mより先にパースを試みてはいけない）
+            attempt(string("D|M").with(value(CompMnemonic::DOrM))),
+            attempt(string("D&M").with(value(CompMnemonic::DAndM))),
+            attempt(string("M-D").with(value(CompMnemonic::MMinusD))),
+            attempt(string("D-M").with(value(CompMnemonic::DMinusM))),
+            attempt(string("D+M").with(value(CompMnemonic::DPlusM))),
+            attempt(string("M-1").with(value(CompMnemonic::MMinusOne))),
+            attempt(string("M+1").with(value(CompMnemonic::MPlusOne))),
+            attempt(string("-M").with(value(CompMnemonic::MinusM))),
+            attempt(string("!M").with(value(CompMnemonic::NegateM))),
+            attempt(string("M").with(value(CompMnemonic::M))),
+            attempt(string("D|A").with(value(CompMnemonic::DOrA))),
+            attempt(string("D&A").with(value(CompMnemonic::DAndA))),
+            attempt(string("A-D").with(value(CompMnemonic::AMinusD))),
+            attempt(string("D-A").with(value(CompMnemonic::DMinusA))),
+            attempt(string("D+A").with(value(CompMnemonic::DPlusA))),
+            attempt(string("A-1").with(value(CompMnemonic::AMinusOne))),
+            attempt(string("D-1").with(value(CompMnemonic::DMinusOne))),
+            attempt(string("A+1").with(value(CompMnemonic::APlusOne))),
+            attempt(string("D+1").with(value(CompMnemonic::DPlusOne))),
+            attempt(string("!A").with(value(CompMnemonic::NegateA))),
+            attempt(string("!D").with(value(CompMnemonic::NegateD))),
+            attempt(string("-A").with(value(CompMnemonic::MinusA))),
+            attempt(string("-D").with(value(CompMnemonic::MinusD))),
+            attempt(string("A").with(value(CompMnemonic::A))),
+            attempt(string("D").with(value(CompMnemonic::D))),
+            attempt(string("1").with(value(CompMnemonic::One))),
+            attempt(string("-1").with(value(CompMnemonic::MinusOne))),
+            attempt(string("0").with(value(CompMnemonic::Zero))),
+        ])
+    }
 }
 
-fn jump_mnemonic<'a, I>() -> impl Parser<I, Output = JumpMnemonic>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    choice([
-        attempt(returns(string("null"), JumpMnemonic::Null)),
-        attempt(returns(string("JGT"), JumpMnemonic::JGT)),
-        attempt(returns(string("JGE"), JumpMnemonic::JGE)),
-        attempt(returns(string("JEQ"), JumpMnemonic::JEQ)),
-        attempt(returns(string("JLT"), JumpMnemonic::JLT)),
-        attempt(returns(string("JNE"), JumpMnemonic::JNE)),
-        attempt(returns(string("JLE"), JumpMnemonic::JLE)),
-        attempt(returns(string("JMP"), JumpMnemonic::JMP)),
-    ])
+parser! {
+    fn jump_mnemonic[Input]()(Input) -> JumpMnemonic
+    where [Input: Stream<Token = char>]
+    {
+        choice([
+            attempt(string("null").with(value(JumpMnemonic::Null)),),
+            attempt(string("JGT").with(value(JumpMnemonic::JGT)),),
+            attempt(string("JGE").with(value(JumpMnemonic::JGE)),),
+            attempt(string("JEQ").with(value(JumpMnemonic::JEQ)),),
+            attempt(string("JLT").with(value(JumpMnemonic::JLT)),),
+            attempt(string("JNE").with(value(JumpMnemonic::JNE)),),
+            attempt(string("JLE").with(value(JumpMnemonic::JLE)),),
+            attempt(string("JMP").with(value(JumpMnemonic::JMP)),),
+        ])
+    }
 }
 
-fn c_command<'a, I>() -> impl Parser<I, Output = CCommand>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    optional(attempt(dest_mnemonic().skip(token('='))))
+parser! {
+    fn c_command[Input]()(Input) -> CCommand
+    where [Input: Stream<Token = char>]
+    {
+        optional(attempt(dest_mnemonic().skip(token('='))))
         .and(comp_mnemonic())
         .and(optional(token(';').with(jump_mnemonic())))
         .map(|((dest, comp), jump)| CCommand { dest, comp, jump })
+    }
 }
-
-type AndThenError<I> = <<I as StreamOnce>::Error as ParseError<
-    <I as StreamOnce>::Token,
-    <I as StreamOnce>::Range,
-    <I as StreamOnce>::Position,
->>::StreamError;
 
 const SYMBOL_CHAR: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.$:";
 
-fn p_address<'a, I>() -> impl Parser<I, Output = ACommand> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    many1(one_of(DIGIT_CHAR.chars())).and_then(|numbers: String| {
-        numbers
-            .parse::<u16>()
-            .map(ACommand::Address)
-            .map_err(AndThenError::<I>::other)
-    })
+parser! {
+    fn p_address[Input]()(Input) -> ACommand
+    where [Input: Stream<Token = char>]
+    {
+        many1(one_of(DIGIT_CHAR.chars())).and_then(|numbers: String| {
+            numbers
+                .parse::<u16>()
+                .map(ACommand::Address)
+                .map_err(AndThenError::<Input>::other)
+        })
+    }
 }
 
-fn p_symbol<'a, I>() -> impl Parser<I, Output = Symbol> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    one_of(SYMBOL_CHAR.chars())
+parser! {
+    fn p_symbol[Input]()(Input) -> Symbol
+    where [Input: Stream<Token = char>]
+    {
+        one_of(SYMBOL_CHAR.chars())
         .and(many(
             one_of(SYMBOL_CHAR.chars()).or(one_of(DIGIT_CHAR.chars())),
         ))
         .map(move |(c, chars): (char, String)| Symbol(String::from(c) + chars.as_str()))
+    }
 }
 
-fn a_command<'a, I>() -> impl Parser<I, Output = ACommand> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    token('@').with(p_address().or(p_symbol().map(ACommand::Symbol)))
+parser! {
+    fn a_command[Input]()(Input) -> ACommand
+    where [Input: Stream<Token = char>]
+    {
+        token('@').with(p_address().or(p_symbol().map(ACommand::Symbol)))
+    }
 }
 
-fn l_command<'a, I>() -> impl Parser<I, Output = Symbol> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    between(token('('), token(')'), p_symbol())
+parser! {
+    fn l_command[Input]()(Input) -> Symbol
+    where [Input: Stream<Token = char>]
+    {
+        between(token('('), token(')'), p_symbol())
+    }
 }
 
-fn command<'a, I>() -> impl Parser<I, Output = Command> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    (a_command().map(Command::A))
+parser! {
+    fn command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (a_command().map(Command::A))
         .or(l_command().map(Command::L))
         .or(c_command().map(Command::C))
+    }
 }
 
 #[cfg(test)]

@@ -4,6 +4,12 @@ use combine::stream::RangeStream;
 use combine::stream::StreamOnce;
 use combine::EasyParser;
 
+pub(crate) type AndThenError<I> = <<I as StreamOnce>::Error as ParseError<
+    <I as StreamOnce>::Token,
+    <I as StreamOnce>::Range,
+    <I as StreamOnce>::Position,
+>>::StreamError;
+
 pub(crate) fn returns<'a, I, T, U>(
     p: impl Parser<I, Output = T>,
     constant: U,
