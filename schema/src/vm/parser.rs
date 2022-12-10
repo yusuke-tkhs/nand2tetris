@@ -1,15 +1,13 @@
-use crate::parser::{easily_parse, returns};
+use crate::parser::{easily_parse, AndThenError};
 use crate::pre_processor;
 use crate::vm::*;
 use combine::attempt;
-use combine::error::ParseError;
 use combine::error::StreamError;
 use combine::parser::char::{digit, space, string};
 use combine::parser::choice::choice;
 use combine::parser::repeat::many1;
-use combine::parser::Parser;
-use combine::stream::RangeStream;
-use combine::stream::StreamOnce;
+use combine::parser::token::value;
+use combine::{parser, Stream};
 
 pub fn parse(input: String) -> anyhow::Result<Vec<Command>> {
     pre_process(input)
@@ -25,39 +23,38 @@ fn pre_process(input: String) -> impl Iterator<Item = String> {
         .filter(non_empty_line)
 }
 
-fn command<'a, I>() -> impl Parser<I, Output = Command> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    (arithmetic_command().map(Command::Arithmetic))
+parser! {
+    fn command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (arithmetic_command().map(Command::Arithmetic))
         .or(memory_access_command().map(Command::MemoryAccess))
+    }
 }
 
-fn arithmetic_command<'a, I>() -> impl Parser<I, Output = ArithmeticCommand>
-where
-    I: RangeStream<Token = char, Range = &'a str>,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    choice((
-        attempt(returns(string("add"), ArithmeticCommand::Add)),
-        attempt(returns(string("sub"), ArithmeticCommand::Sub)),
-        attempt(returns(string("neg"), ArithmeticCommand::Neg)),
-        attempt(returns(string("eq"), ArithmeticCommand::Eq)),
-        attempt(returns(string("gt"), ArithmeticCommand::Gt)),
-        attempt(returns(string("lt"), ArithmeticCommand::Lt)),
-        attempt(returns(string("and"), ArithmeticCommand::And)),
-        attempt(returns(string("or"), ArithmeticCommand::Or)),
-        attempt(returns(string("not"), ArithmeticCommand::Not)),
-    ))
+parser! {
+    fn arithmetic_command[Input]()(Input) -> ArithmeticCommand
+    where [Input: Stream<Token = char>]
+    {
+        choice((
+            attempt(string("add").with(value(ArithmeticCommand::Add))),
+            attempt(string("sub").with(value(ArithmeticCommand::Sub))),
+            attempt(string("neg").with(value(ArithmeticCommand::Neg))),
+            attempt(string("eq").with(value(ArithmeticCommand::Eq))),
+            attempt(string("gt").with(value(ArithmeticCommand::Gt))),
+            attempt(string("lt").with(value(ArithmeticCommand::Lt))),
+            attempt(string("and").with(value(ArithmeticCommand::And))),
+            attempt(string("or").with(value(ArithmeticCommand::Or))),
+            attempt(string("not").with(value(ArithmeticCommand::Not))),
+        ))
+    }
 }
 
-fn memory_access_command<'a, I>() -> impl Parser<I, Output = MemoryAccessCommand> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    access_type()
+parser! {
+    fn memory_access_command[Input]()(Input) -> MemoryAccessCommand
+    where [Input: Stream<Token = char>]
+    {
+        access_type()
         .skip(space())
         .and(segment().skip(space()).and(index()))
         .map(|(access_type, (segment, index))| MemoryAccessCommand {
@@ -65,53 +62,48 @@ where
             segment,
             index,
         })
+    }
 }
 
-fn access_type<'a, I>() -> impl Parser<I, Output = AccessType> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    choice((
-        attempt(returns(string("push"), AccessType::Push)),
-        attempt(returns(string("pop"), AccessType::Pop)),
-    ))
+parser! {
+    fn access_type[Input]()(Input) -> AccessType
+    where [Input: Stream<Token = char>]
+    {
+        choice((
+            attempt(string("push").with(value(AccessType::Push))),
+            attempt(string("pop").with(value(AccessType::Pop))),
+        ))
+    }
 }
 
-fn segment<'a, I>() -> impl Parser<I, Output = Segment> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    choice((
-        attempt(returns(string("argument"), Segment::Argument)),
-        attempt(returns(string("local"), Segment::Local)),
-        attempt(returns(string("static"), Segment::Static)),
-        attempt(returns(string("constant"), Segment::Constant)),
-        attempt(returns(string("this"), Segment::This)),
-        attempt(returns(string("that"), Segment::That)),
-        attempt(returns(string("pointer"), Segment::Pointer)),
-        attempt(returns(string("temp"), Segment::Temp)),
-    ))
+parser! {
+    fn segment[Input]()(Input) -> Segment
+    where [Input: Stream<Token = char>]
+    {
+        choice((
+            attempt(string("argument").with(value(Segment::Argument))),
+            attempt(string("local").with(value(Segment::Local))),
+            attempt(string("static").with(value(Segment::Static))),
+            attempt(string("constant").with(value(Segment::Constant))),
+            attempt(string("this").with(value(Segment::This))),
+            attempt(string("that").with(value(Segment::That))),
+            attempt(string("pointer").with(value(Segment::Pointer))),
+            attempt(string("temp").with(value(Segment::Temp))),
+        ))
+    }
 }
 
-type AndThenError<I> = <<I as StreamOnce>::Error as ParseError<
-    <I as StreamOnce>::Token,
-    <I as StreamOnce>::Range,
-    <I as StreamOnce>::Position,
->>::StreamError;
-
-fn index<'a, I>() -> impl Parser<I, Output = Index> + 'a
-where
-    I: RangeStream<Token = char, Range = &'a str> + 'a,
-    I::Error: ParseError<I::Token, I::Range, I::Position>,
-{
-    many1(digit()).and_then(|numbers: String| {
-        numbers
-            .parse::<u16>()
-            .map(Index::new)
-            .map_err(AndThenError::<I>::other)
-    })
+parser! {
+    fn index[Input]()(Input) -> Index
+    where [Input: Stream<Token = char>]
+    {
+        many1(digit()).and_then(|numbers: String| {
+            numbers
+                .parse::<u16>()
+                .map(Index::new)
+                .map_err(AndThenError::<Input>::other)
+        })
+    }
 }
 
 #[cfg(test)]
