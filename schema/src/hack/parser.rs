@@ -1,3 +1,4 @@
+use crate::constant::DIGIT_CHAR;
 use crate::hack::*;
 use crate::parser::{easily_parse, returns};
 use crate::pre_processor;
@@ -114,7 +115,6 @@ type AndThenError<I> = <<I as StreamOnce>::Error as ParseError<
     <I as StreamOnce>::Position,
 >>::StreamError;
 
-const DIGIT_CHAR: &str = "0123456789";
 const SYMBOL_CHAR: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.$:";
 
 fn p_address<'a, I>() -> impl Parser<I, Output = ACommand> + 'a

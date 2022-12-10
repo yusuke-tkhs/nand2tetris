@@ -32,6 +32,7 @@ impl Command {
                     }
                 }
             }),
+            _ => unimplemented!(),
         })
     }
 }
