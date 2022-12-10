@@ -1,13 +1,6 @@
-use combine::error::ParseError;
 use combine::stream::RangeStream;
 use combine::stream::StreamOnce;
 use combine::EasyParser;
-
-pub(crate) type AndThenError<I> = <<I as StreamOnce>::Error as ParseError<
-    <I as StreamOnce>::Token,
-    <I as StreamOnce>::Range,
-    <I as StreamOnce>::Position,
->>::StreamError;
 
 pub(crate) fn easily_parse<'a, I, T, F, Fout>(parser_generator: F, input: I) -> anyhow::Result<T>
 where

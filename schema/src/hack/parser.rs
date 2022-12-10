@@ -1,6 +1,6 @@
 use crate::constant::DIGIT_CHAR;
 use crate::hack::*;
-use crate::parser::{easily_parse, AndThenError};
+use crate::parser::easily_parse;
 use crate::pre_processor;
 use combine::error::StreamError;
 use combine::parser;
@@ -8,6 +8,7 @@ use combine::parser::char::string;
 use combine::parser::choice::choice;
 use combine::parser::repeat::{many, many1};
 use combine::parser::token::value;
+use combine::stream::StreamErrorFor;
 use combine::Stream;
 use combine::{attempt, between, one_of, optional, token};
 
@@ -118,7 +119,7 @@ parser! {
             numbers
                 .parse::<u16>()
                 .map(ACommand::Address)
-                .map_err(AndThenError::<Input>::other)
+                .map_err(StreamErrorFor::<Input>::other)
         })
     }
 }

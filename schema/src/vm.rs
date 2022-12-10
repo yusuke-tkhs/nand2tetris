@@ -17,27 +17,6 @@ pub enum Command {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Label(String);
 
-const AvailableCharsInLabel: &str =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.:";
-
-impl std::str::FromStr for Label {
-    type Err = anyhow::Error;
-    fn from_str(label: &str) -> Result<Self, Self::Err> {
-        use crate::constant::DIGIT_CHAR;
-        if DIGIT_CHAR.chars().any(|c| label.starts_with(c)) {
-            anyhow::bail!("label should not starts with digit")
-        }
-        if let Some(invalid_char) = label.chars().find(|label_c| {
-            DIGIT_CHAR.chars().all(|c| c != *label_c)
-                && AvailableCharsInLabel.chars().all(|c| c != *label_c)
-        }) {
-            anyhow::bail!("invalid char is used for label: {}", invalid_char)
-        } else {
-            Ok(Self(label.to_string()))
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ArithmeticCommand {
     Add,
