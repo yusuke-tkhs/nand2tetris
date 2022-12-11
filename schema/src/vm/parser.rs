@@ -8,7 +8,7 @@ use combine::parser::choice::choice;
 use combine::parser::repeat::many1;
 use combine::parser::token::value;
 use combine::stream::StreamErrorFor;
-use combine::{any, parser, Stream};
+use combine::{parser, Stream};
 
 pub fn parse(input: String) -> anyhow::Result<Vec<Command>> {
     pre_process(input)
@@ -24,62 +24,85 @@ fn pre_process(input: String) -> impl Iterator<Item = String> {
         .filter(non_empty_line)
 }
 
-#[derive(Debug)]
-pub enum LabelParseError {
-    StartsWithNumber(char),
-    InvalidCharIsUsed(char, usize),
-}
-impl std::fmt::Display for LabelParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Self::StartsWithNumber(c) => write!(f, "label starts with number {}", c),
-            Self::InvalidCharIsUsed(c, pos) => write!(
-                f,
-                "Illegal character '{}' is used in the {}th letter",
-                c, pos
-            ),
-        }
+parser! {
+    fn command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        choice((
+            arithmetic_command().map(Command::Arithmetic),
+            memory_access_command().map(Command::MemoryAccess),
+            function_command(),
+            call_command(),
+            label_command(),
+            goto_command(),
+            if_goto_command(),
+        ))
     }
 }
-impl std::error::Error for LabelParseError {}
+
+parser! {
+    fn function_command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (string("function").and(space()))
+            .with(
+                label().skip(space()).and(crate::parser::p_u16()))
+                .map(|(name, args_count)|Command::Function { name, args_count}
+            )
+    }
+}
+
+parser! {
+    fn call_command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (string("call").and(space()))
+            .with(
+                label().skip(space()).and(crate::parser::p_u16()))
+                .map(|(name, args_count)|Command::Call { name, args_count}
+            )
+    }
+}
+
+parser! {
+    fn return_command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        string("return").with(value(Command::Return))
+    }
+}
+
+parser! {
+    fn label_command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (string("label").and(space())).with(label()).map(Command::Label)
+    }
+}
+
+parser! {
+    fn goto_command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (string("goto").and(space())).with(label()).map(Command::Goto)
+    }
+}
+
+parser! {
+    fn if_goto_command[Input]()(Input) -> Command
+    where [Input: Stream<Token = char>]
+    {
+        (string("if-goto").and(space())).with(label()).map(Command::IfGoto)
+    }
+}
 
 const AVAILABLE_CHARS_IN_LABEL: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.:";
-
-impl std::str::FromStr for Label {
-    type Err = LabelParseError;
-    fn from_str(label: &str) -> Result<Self, Self::Err> {
-        use crate::constant::DIGIT_CHAR;
-        if let Some(c) = DIGIT_CHAR.chars().find(|c| label.starts_with(*c)) {
-            return Err(LabelParseError::StartsWithNumber(c));
-        }
-        if let Some(invalid_char) = label.chars().find(|label_c| {
-            DIGIT_CHAR.chars().all(|c| c != *label_c)
-                && AVAILABLE_CHARS_IN_LABEL.chars().all(|c| c != *label_c)
-        }) {
-            let Some(pos) = label.chars().position(|c|c ==invalid_char) else {
-                unreachable!()
-            };
-            Err(LabelParseError::InvalidCharIsUsed(invalid_char, pos))
-        } else {
-            Ok(Self(label.to_string()))
-        }
-    }
-}
 
 parser! {
     fn label[Input]()(Input) -> Label
     where [Input: Stream<Token = char>]
     {
-        many1(any()).and_then(|s: String|s.parse().map_err(StreamErrorFor::<Input>::other))
-    }
-}
-
-parser! {
-    fn command[Input]()(Input) -> Command
-    where [Input: Stream<Token = char>]
-    {
-        (arithmetic_command().map(Command::Arithmetic))
-        .or(memory_access_command().map(Command::MemoryAccess))
+        crate::parser::not_digit_starts_str(AVAILABLE_CHARS_IN_LABEL).map(Label)
     }
 }
 

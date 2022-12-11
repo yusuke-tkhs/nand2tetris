@@ -1,16 +1,12 @@
-use crate::constant::DIGIT_CHAR;
 use crate::hack::*;
 use crate::parser::easily_parse;
 use crate::pre_processor;
-use combine::error::StreamError;
 use combine::parser;
 use combine::parser::char::string;
 use combine::parser::choice::choice;
-use combine::parser::repeat::{many, many1};
 use combine::parser::token::value;
-use combine::stream::StreamErrorFor;
 use combine::Stream;
-use combine::{attempt, between, one_of, optional, token};
+use combine::{attempt, between, optional, token};
 
 pub fn parse(input: String) -> anyhow::Result<Vec<Command>> {
     pre_process(input)
@@ -109,30 +105,21 @@ parser! {
     }
 }
 
-const SYMBOL_CHAR: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.$:";
-
 parser! {
     fn p_address[Input]()(Input) -> ACommand
     where [Input: Stream<Token = char>]
     {
-        many1(one_of(DIGIT_CHAR.chars())).and_then(|numbers: String| {
-            numbers
-                .parse::<u16>()
-                .map(ACommand::Address)
-                .map_err(StreamErrorFor::<Input>::other)
-        })
+        crate::parser::p_u16().map(ACommand::Address)
     }
 }
+
+const SYMBOL_CHAR: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.$:";
 
 parser! {
     fn p_symbol[Input]()(Input) -> Symbol
     where [Input: Stream<Token = char>]
     {
-        one_of(SYMBOL_CHAR.chars())
-        .and(many(
-            one_of(SYMBOL_CHAR.chars()).or(one_of(DIGIT_CHAR.chars())),
-        ))
-        .map(move |(c, chars): (char, String)| Symbol(String::from(c) + chars.as_str()))
+        crate::parser::not_digit_starts_str(SYMBOL_CHAR).map(Symbol)
     }
 }
 

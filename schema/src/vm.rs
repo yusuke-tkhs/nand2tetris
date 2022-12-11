@@ -17,6 +17,12 @@ pub enum Command {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Label(String);
 
+impl Label {
+    pub fn new(str: &str) -> Self {
+        Self(str.to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ArithmeticCommand {
     Add,
