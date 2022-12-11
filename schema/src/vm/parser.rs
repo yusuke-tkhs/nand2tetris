@@ -29,13 +29,14 @@ parser! {
     where [Input: Stream<Token = char>]
     {
         choice((
-            arithmetic_command().map(Command::Arithmetic),
-            memory_access_command().map(Command::MemoryAccess),
-            function_command(),
-            call_command(),
-            label_command(),
-            goto_command(),
-            if_goto_command(),
+            attempt(arithmetic_command().map(Command::Arithmetic)),
+            attempt(memory_access_command().map(Command::MemoryAccess)),
+            attempt(function_command()),
+            attempt(call_command()),
+            attempt(return_command()),
+            attempt(label_command()),
+            attempt(goto_command()),
+            attempt(if_goto_command()),
         ))
     }
 }
@@ -197,6 +198,26 @@ mod tests {
             }),
         );
         easy_parser_assert(command, "lt", Command::Arithmetic(ArithmeticCommand::Lt));
+        easy_parser_assert(
+            command,
+            "function hoge 12",
+            Command::Function {
+                name: Label::new("hoge"),
+                args_count: 12,
+            },
+        );
+        easy_parser_assert(
+            command,
+            "call hoge 12",
+            Command::Call {
+                name: Label::new("hoge"),
+                args_count: 12,
+            },
+        );
+        easy_parser_assert(command, "return", Command::Return);
+        easy_parser_assert(command, "label hoge", Command::Label(Label::new("hoge")));
+        easy_parser_assert(command, "goto hoge", Command::Goto(Label::new("hoge")));
+        easy_parser_assert(command, "if-goto hoge", Command::IfGoto(Label::new("hoge")));
     }
 
     #[test]

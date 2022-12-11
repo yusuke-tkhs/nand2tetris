@@ -43,7 +43,7 @@ where
 {
     let parsed = parser_generator()
         .easy_parse(input)
-        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
     Ok(parsed.0)
 }
 
