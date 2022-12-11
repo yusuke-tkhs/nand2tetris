@@ -275,7 +275,7 @@ fn load_indirect_address_to_d(
 }
 
 // Dレジスタに保存されたアドレスのメモリ位置にStackから値をPopする
-fn pop_to_address_written_in_d() -> AssemblerCodeBlock {
+pub(crate) fn pop_to_address_written_in_d() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "pop value to memory address specified by D register",
         &[

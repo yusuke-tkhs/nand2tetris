@@ -21,6 +21,9 @@ impl Label {
     pub fn new(str: &str) -> Self {
         Self(str.to_string())
     }
+    pub fn get(&self) -> &str {
+        &self.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

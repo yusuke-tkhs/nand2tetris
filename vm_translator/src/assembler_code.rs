@@ -3,6 +3,7 @@ use schema::hack;
 
 mod arithmetic;
 mod memory_access;
+mod program_flow;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AssemblerCodeBlock {
@@ -37,6 +38,9 @@ pub fn construct_code_block(
             semantics::Command::MemoryAccess(memory_access) => {
                 memory_access::construct(memory_access)
             }
+            semantics::Command::Label(label) => vec![program_flow::construct_label(label)],
+            semantics::Command::Goto(label) => vec![program_flow::construct_goto(label)],
+            semantics::Command::IfGoto(label) => program_flow::construct_if_goto(label),
         })
         .collect::<Vec<_>>())
 }

@@ -1,10 +1,21 @@
 use crate::file_context::FileContext;
 use schema::vm;
 
+// pub struct Function {
+//     name: vm::Label,
+//     args_count: u16,
+//     commands: Vec<Command>,
+//     has_return: bool,
+// }
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Command {
     Arithmetic(ArithmeticCommand),
     MemoryAccess(MemoryAccessCommand),
+    // Call{name: vm::Label, args_count: u16},
+    Label(vm::Label),
+    Goto(vm::Label),
+    IfGoto(vm::Label),
 }
 
 impl Command {
@@ -32,6 +43,9 @@ impl Command {
                     }
                 }
             }),
+            vm::Command::Label(label) => Command::Label(label),
+            vm::Command::Goto(label) => Command::Goto(label),
+            vm::Command::IfGoto(label) => Command::IfGoto(label),
             _ => unimplemented!(),
         })
     }
