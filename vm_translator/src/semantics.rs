@@ -1,6 +1,12 @@
 use crate::file_context::FileContext;
 use schema::vm;
 
+// ファイルはモジュールと仮定する
+// pub struct Module {
+//     name: String,
+//     functions: Vec<Function>,
+// }
+
 // pub struct Function {
 //     name: vm::Label,
 //     args_count: u16,
