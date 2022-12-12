@@ -1,8 +1,12 @@
 use super::AssemblerCodeBlock;
+use crate::file_context::FileContext;
 use crate::semantics;
 use schema::hack;
 
-pub fn construct(arithmetic_command: semantics::ArithmeticCommand) -> Vec<AssemblerCodeBlock> {
+pub fn construct(
+    arithmetic_command: semantics::ArithmeticCommand,
+    file_context: &mut FileContext,
+) -> Vec<AssemblerCodeBlock> {
     match arithmetic_command {
         semantics::ArithmeticCommand::UnaryOperator(unary_operator) => vec![
             AssemblerCodeBlock::new_header_comment("Arithmetic command (Unary Operator)"),
@@ -13,7 +17,7 @@ pub fn construct(arithmetic_command: semantics::ArithmeticCommand) -> Vec<Assemb
         semantics::ArithmeticCommand::BinaryOperator(binary_operator) => vec![
             AssemblerCodeBlock::new_header_comment("Arithmetic command (Binary Operator)"),
             load_argxy_to_d_and_a(),
-            exec_binary_operator(binary_operator),
+            exec_binary_operator(binary_operator, file_context),
             write_binary_result_to_stack(),
         ],
     }
@@ -130,12 +134,16 @@ fn write_unary_result_to_stack() -> AssemblerCodeBlock {
 }
 
 // 2変数関数を実行してDレジスタに保存
-fn exec_binary_operator(operator: semantics::BinaryOperator) -> AssemblerCodeBlock {
+fn exec_binary_operator(
+    operator: semantics::BinaryOperator,
+    file_context: &mut FileContext,
+) -> AssemblerCodeBlock {
     match operator {
         semantics::BinaryOperator::Mathmatical(math_op) => {
             exec_binary_mathmatical_operator(math_op)
         }
-        semantics::BinaryOperator::Comparison(comp_op, unique_key) => {
+        semantics::BinaryOperator::Comparison(comp_op) => {
+            let unique_key = file_context.publish_unique_key();
             exec_binary_comparison_operator(comp_op, unique_key)
         }
         semantics::BinaryOperator::Logical(logical_op) => exec_binary_logical_operator(logical_op),

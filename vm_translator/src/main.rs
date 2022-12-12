@@ -24,13 +24,12 @@ fn construct_assembler_code_blocks(
     );
     let semantic_commands: Vec<semantics::Command> = vm_commands
         .into_iter()
-        .map(|command| semantics::Command::try_from_command(command, &mut file_context))
+        .map(semantics::Command::try_from_command)
         .collect::<anyhow::Result<Vec<_>>>()
         .unwrap();
 
     // アセンブラコード塊への変換
-    // TODO こちらでFileContext受け取るようにも出来るはずで、そうすると大分設計がシンプルになるかも
-    assembler_code::construct_code_block(semantic_commands).unwrap()
+    assembler_code::construct_code_block(semantic_commands, &mut file_context).unwrap()
 }
 
 fn main() {

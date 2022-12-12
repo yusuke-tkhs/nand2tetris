@@ -1,3 +1,4 @@
+use crate::file_context::FileContext;
 use crate::semantics;
 use schema::hack;
 
@@ -28,15 +29,16 @@ impl AssemblerCodeBlock {
 
 pub fn construct_code_block(
     commands: Vec<semantics::Command>,
+    file_context: &mut FileContext,
 ) -> anyhow::Result<Vec<AssemblerCodeBlock>> {
     Ok(commands
         .into_iter()
         .flat_map(|command: semantics::Command| match command {
             semantics::Command::Arithmetic(arithmetic_command) => {
-                arithmetic::construct(arithmetic_command)
+                arithmetic::construct(arithmetic_command, file_context)
             }
             semantics::Command::MemoryAccess(memory_access) => {
-                memory_access::construct(memory_access)
+                memory_access::construct(memory_access, file_context)
             }
             semantics::Command::Label(label) => vec![program_flow::construct_label(label)],
             semantics::Command::Goto(label) => vec![program_flow::construct_goto(label)],

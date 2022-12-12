@@ -1,4 +1,3 @@
-use crate::file_context::FileContext;
 use schema::vm;
 
 // ファイルはモジュールと仮定する
@@ -25,28 +24,19 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn try_from_command(
-        src: vm::Command,
-        file_context: &mut FileContext,
-    ) -> anyhow::Result<Self> {
+    pub fn try_from_command(src: vm::Command) -> anyhow::Result<Self> {
         Ok(match src {
             vm::Command::Arithmetic(arithmetic_command) => Self::Arithmetic(
-                ArithmeticCommand::from_arithmetic_command(arithmetic_command, file_context),
+                ArithmeticCommand::from_arithmetic_command(arithmetic_command),
             ),
             vm::Command::MemoryAccess(memory_access_command) => Self::MemoryAccess({
                 match memory_access_command.access_type {
-                    vm::AccessType::Push => {
-                        MemoryAccessCommand::Push(PushSource::from_memory_access_command(
-                            memory_access_command,
-                            file_context.file_name(),
-                        ))
-                    }
-                    vm::AccessType::Pop => {
-                        MemoryAccessCommand::Pop(PopTarget::try_from_memory_access_command(
-                            memory_access_command,
-                            file_context.file_name(),
-                        )?)
-                    }
+                    vm::AccessType::Push => MemoryAccessCommand::Push(
+                        PushSource::from_memory_access_command(memory_access_command),
+                    ),
+                    vm::AccessType::Pop => MemoryAccessCommand::Pop(
+                        PopTarget::try_from_memory_access_command(memory_access_command)?,
+                    ),
                 }
             }),
             vm::Command::Label(label) => Command::Label(label),
@@ -64,10 +54,7 @@ pub enum ArithmeticCommand {
 }
 
 impl ArithmeticCommand {
-    fn from_arithmetic_command(
-        command: vm::ArithmeticCommand,
-        file_context: &mut FileContext,
-    ) -> Self {
+    fn from_arithmetic_command(command: vm::ArithmeticCommand) -> Self {
         match command {
             vm::ArithmeticCommand::Add => ArithmeticCommand::BinaryOperator(
                 BinaryOperator::Mathmatical(BinaryMathmaticalOperator::Addition),
@@ -76,24 +63,15 @@ impl ArithmeticCommand {
                 BinaryOperator::Mathmatical(BinaryMathmaticalOperator::Sububraction),
             ),
             vm::ArithmeticCommand::Neg => ArithmeticCommand::UnaryOperator(UnaryOperator::Negative),
-            vm::ArithmeticCommand::Eq => {
-                ArithmeticCommand::BinaryOperator(BinaryOperator::Comparison(
-                    BinaryComparisonOperator::Equal,
-                    file_context.publish_unique_key(),
-                ))
-            }
-            vm::ArithmeticCommand::Gt => {
-                ArithmeticCommand::BinaryOperator(BinaryOperator::Comparison(
-                    BinaryComparisonOperator::GreaterThan,
-                    file_context.publish_unique_key(),
-                ))
-            }
-            vm::ArithmeticCommand::Lt => {
-                ArithmeticCommand::BinaryOperator(BinaryOperator::Comparison(
-                    BinaryComparisonOperator::LessThan,
-                    file_context.publish_unique_key(),
-                ))
-            }
+            vm::ArithmeticCommand::Eq => ArithmeticCommand::BinaryOperator(
+                BinaryOperator::Comparison(BinaryComparisonOperator::Equal),
+            ),
+            vm::ArithmeticCommand::Gt => ArithmeticCommand::BinaryOperator(
+                BinaryOperator::Comparison(BinaryComparisonOperator::GreaterThan),
+            ),
+            vm::ArithmeticCommand::Lt => ArithmeticCommand::BinaryOperator(
+                BinaryOperator::Comparison(BinaryComparisonOperator::LessThan),
+            ),
             vm::ArithmeticCommand::And => ArithmeticCommand::BinaryOperator(
                 BinaryOperator::Logical(BinaryLogicalOperator::And),
             ),
@@ -114,9 +92,9 @@ pub enum UnaryOperator {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BinaryOperator {
-    Mathmatical(BinaryMathmaticalOperator),       // 算術演算子
-    Comparison(BinaryComparisonOperator, String), // 比較演算子, ユニークキー
-    Logical(BinaryLogicalOperator),               // 論理演算子
+    Mathmatical(BinaryMathmaticalOperator), // 算術演算子
+    Comparison(BinaryComparisonOperator),   // 比較演算子
+    Logical(BinaryLogicalOperator),         // 論理演算子
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -146,8 +124,8 @@ pub enum MemoryAccessCommand {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PushSource {
-    Constant(u16),         // 定数（仮想セグメント）
-    SymbolMapping(String), // シンボルアクセス
+    Constant(u16),       // 定数（仮想セグメント）
+    StaticVariable(u16), // スタティック変数
     DirectAddress {
         // 直接アドレス指定
         mapping_type: DirectMappingType,
@@ -161,7 +139,7 @@ pub enum PushSource {
 }
 
 impl PushSource {
-    fn from_memory_access_command(src: vm::MemoryAccessCommand, file_name: String) -> Self {
+    fn from_memory_access_command(src: vm::MemoryAccessCommand) -> Self {
         match src.segment {
             vm::Segment::Argument => Self::IndirectAddress {
                 mapping_type: InDirectMappingType::Argument,
@@ -171,9 +149,7 @@ impl PushSource {
                 mapping_type: InDirectMappingType::Local,
                 offset: src.index.get(),
             },
-            vm::Segment::Static => {
-                Self::SymbolMapping(format!("Static_{file_name}_{}", src.index.get()))
-            }
+            vm::Segment::Static => Self::StaticVariable(src.index.get()),
             vm::Segment::Constant => Self::Constant(src.index.get()),
             vm::Segment::This => Self::IndirectAddress {
                 mapping_type: InDirectMappingType::This,
@@ -197,7 +173,7 @@ impl PushSource {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PopTarget {
-    SymbolMapping(String), // シンボルアクセス
+    StaticVariable(u16), // スタティック変数
     DirectAddress {
         // 直接アドレス指定
         mapping_type: DirectMappingType,
@@ -211,10 +187,7 @@ pub enum PopTarget {
 }
 
 impl PopTarget {
-    fn try_from_memory_access_command(
-        src: vm::MemoryAccessCommand,
-        file_name: String,
-    ) -> anyhow::Result<Self> {
+    fn try_from_memory_access_command(src: vm::MemoryAccessCommand) -> anyhow::Result<Self> {
         Ok(match src.segment {
             vm::Segment::Argument => Self::IndirectAddress {
                 mapping_type: InDirectMappingType::Argument,
@@ -224,9 +197,7 @@ impl PopTarget {
                 mapping_type: InDirectMappingType::Local,
                 offset: src.index.get(),
             },
-            vm::Segment::Static => {
-                Self::SymbolMapping(format!("Static_{file_name}_{}", src.index.get()))
-            }
+            vm::Segment::Static => Self::StaticVariable(src.index.get()),
             vm::Segment::Constant => anyhow::bail!("catnnot pop to constant"),
             vm::Segment::This => Self::IndirectAddress {
                 mapping_type: InDirectMappingType::This,
