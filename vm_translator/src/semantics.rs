@@ -1,31 +1,78 @@
 use schema::vm;
 
 // ファイルはモジュールと仮定する
-// pub struct Module {
-//     name: String,
-//     functions: Vec<Function>,
-// }
+#[allow(dead_code)]
+pub struct Module {
+    name: String,
+    functions: Vec<Function>,
+}
 
-// pub struct Function {
-//     name: vm::Label,
-//     args_count: u16,
-//     commands: Vec<Command>,
-//     has_return: bool,
-// }
+#[allow(dead_code)]
+impl Module {
+    fn try_from_commands(
+        module_name: String,
+        vm_commands: Vec<vm::Command>,
+    ) -> anyhow::Result<Self> {
+        Ok(Self {
+            name: module_name,
+            functions: Function::try_from_commands(vm_commands)?,
+        })
+    }
+}
+
+#[allow(dead_code)]
+pub struct Function {
+    name: String,
+    args_count: u16,
+    commands: Vec<Command>,
+}
+
+#[allow(dead_code)]
+impl Function {
+    fn try_from_commands(vm_commands: Vec<vm::Command>) -> anyhow::Result<Vec<Self>> {
+        let each_function_vm_commands = separate(vm_commands, |vm_command| {
+            matches!(vm_command, vm::Command::Function { .. })
+        });
+        each_function_vm_commands
+            .into_iter()
+            .map(|commands| {
+                let Some((
+                    vm::Command::Function { name, args_count },
+                    rest_commands
+                )) = commands.split_first() else {
+                    anyhow::bail!("all commands should be written in function!");
+                };
+                Ok(Self {
+                    name: name.get().to_string(),
+                    args_count: *args_count,
+                    commands: rest_commands
+                        .iter()
+                        .cloned()
+                        .map(Command::try_from_command)
+                        .collect::<anyhow::Result<Vec<_>>>()?,
+                })
+            })
+            .collect::<anyhow::Result<Vec<_>>>()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Command {
     Arithmetic(ArithmeticCommand),
     MemoryAccess(MemoryAccessCommand),
-    // Call{name: vm::Label, args_count: u16},
-    Label(vm::Label),
-    Goto(vm::Label),
-    IfGoto(vm::Label),
+    Call { name: String, args_count: u16 },
+    Return,
+    Label(String),
+    Goto(String),
+    IfGoto(String),
 }
 
 impl Command {
     pub fn try_from_command(src: vm::Command) -> anyhow::Result<Self> {
         Ok(match src {
+            vm::Command::Function { .. } => {
+                anyhow::bail!("function could not converted to semantic command")
+            }
             vm::Command::Arithmetic(arithmetic_command) => Self::Arithmetic(
                 ArithmeticCommand::from_arithmetic_command(arithmetic_command),
             ),
@@ -39,10 +86,14 @@ impl Command {
                     ),
                 }
             }),
-            vm::Command::Label(label) => Command::Label(label),
-            vm::Command::Goto(label) => Command::Goto(label),
-            vm::Command::IfGoto(label) => Command::IfGoto(label),
-            _ => unimplemented!(),
+            vm::Command::Call { name, args_count } => Command::Call {
+                name: name.get_string(),
+                args_count,
+            },
+            vm::Command::Return => Command::Return,
+            vm::Command::Label(label) => Command::Label(label.get_string()),
+            vm::Command::Goto(label) => Command::Goto(label.get_string()),
+            vm::Command::IfGoto(label) => Command::IfGoto(label.get_string()),
         })
     }
 }
@@ -231,4 +282,33 @@ pub enum InDirectMappingType {
     Local,
     This,
     That,
+}
+
+// pred が true を返す度に新しいVecとなるように分割する
+fn separate<T>(vec: Vec<T>, pred: fn(&T) -> bool) -> Vec<Vec<T>> {
+    let mut res: Vec<Vec<T>> = vec![];
+    for v in vec {
+        if pred(&v) {
+            res.push(vec![v]);
+        } else if let Some(last) = res.last_mut() {
+            last.push(v);
+        } else {
+            res.push(vec![v]);
+        }
+    }
+    res
+}
+
+#[test]
+fn test_separete() {
+    let nums = vec![0, 1, 2, 3, 4, 5, 6, 7];
+    assert_eq!(
+        separate(nums, |n| n % 3 == 0),
+        vec![vec![0, 1, 2], vec![3, 4, 5], vec![6, 7],]
+    );
+    let nums = vec![1, 2, 3, 4, 5, 6, 7];
+    assert_eq!(
+        separate(nums, |n| n % 3 == 0),
+        vec![vec![1, 2], vec![3, 4, 5], vec![6, 7],]
+    )
 }

@@ -43,6 +43,8 @@ pub fn construct_code_block(
             semantics::Command::Label(label) => vec![program_flow::construct_label(label)],
             semantics::Command::Goto(label) => vec![program_flow::construct_goto(label)],
             semantics::Command::IfGoto(label) => program_flow::construct_if_goto(label),
+            semantics::Command::Call { .. } => todo!(),
+            semantics::Command::Return => todo!(),
         })
         .collect::<Vec<_>>())
 }

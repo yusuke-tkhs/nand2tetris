@@ -1,23 +1,23 @@
 use super::AssemblerCodeBlock;
-use schema::{hack, vm};
+use schema::hack;
 
-pub(super) fn construct_label(label: vm::Label) -> AssemblerCodeBlock {
+pub(super) fn construct_label(label: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "define label",
         &[
             // (LABEL)
-            hack::Command::L(hack::Symbol::new(label.get())),
+            hack::Command::L(hack::Symbol::new(&label)),
         ],
     )
 }
 
-pub(super) fn construct_goto(label: vm::Label) -> AssemblerCodeBlock {
+pub(super) fn construct_goto(label: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "Jump to label",
         &[
             // @LABEL
             // 0;JMP
-            hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(label.get()))),
+            hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(&label))),
             hack::Command::C(hack::CCommand {
                 dest: None,
                 comp: hack::CompMnemonic::Zero,
@@ -27,7 +27,7 @@ pub(super) fn construct_goto(label: vm::Label) -> AssemblerCodeBlock {
     )
 }
 
-pub(super) fn construct_if_goto(label: vm::Label) -> Vec<AssemblerCodeBlock> {
+pub(super) fn construct_if_goto(label: String) -> Vec<AssemblerCodeBlock> {
     use super::memory_access::pop_to_address_written_in_d;
     vec![
         AssemblerCodeBlock::new(
@@ -57,7 +57,7 @@ pub(super) fn construct_if_goto(label: vm::Label) -> Vec<AssemblerCodeBlock> {
                 }),
                 // @LABEL
                 // D;JNE
-                hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(label.get()))),
+                hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new(&label))),
                 hack::Command::C(hack::CCommand {
                     dest: None,
                     comp: hack::CompMnemonic::D,
