@@ -1,35 +1,24 @@
 use core::panic;
 use schema::vm;
+use semantics::{genarate_assembler_code, AssemblerCodeBlock, Module};
 use std::path::{Path, PathBuf};
 
-mod assembler_code;
-mod file_context;
 mod semantics;
 
-fn construct_assembler_code_blocks(
-    input_path: impl AsRef<Path>,
-) -> Vec<assembler_code::AssemblerCodeBlock> {
+fn construct_assembler_code_blocks(input_path: impl AsRef<Path>) -> Vec<AssemblerCodeBlock> {
     let input = std::fs::read_to_string(input_path.as_ref()).unwrap();
+
+    // ファイル名をモジュール名とする
+    let module_name: &str = input_path.as_ref().file_stem().unwrap().to_str().unwrap();
 
     // 構文解析
     let vm_commands: Vec<vm::Command> = vm::parse(input).unwrap();
 
     // 意味解析（コード生成処理のアルゴリズムが使いやすい形にしておく）
-    let mut file_context = file_context::FileContext::new(
-        input_path
-            .as_ref()
-            .file_name()
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap(),
-    );
-    let semantic_commands: Vec<semantics::Command> = vm_commands
-        .into_iter()
-        .map(semantics::Command::try_from_command)
-        .collect::<anyhow::Result<Vec<_>>>()
-        .unwrap();
+    let module = Module::try_from_commands(module_name, vm_commands).unwrap();
 
     // アセンブラコード塊への変換
-    assembler_code::construct_code_block(semantic_commands, &mut file_context).unwrap()
+    module.into_code_blocks()
 }
 
 fn main() {
@@ -37,8 +26,7 @@ fn main() {
 
     let input_arg_path: &Path = Path::new(args.get(1).unwrap());
 
-    let assembler_code_blocks: Vec<assembler_code::AssemblerCodeBlock> = if input_arg_path.is_dir()
-    {
+    let assembler_code_blocks: Vec<AssemblerCodeBlock> = if input_arg_path.is_dir() {
         let input_files: Vec<PathBuf> = std::fs::read_dir(input_arg_path)
             .unwrap()
             .into_iter()
@@ -64,7 +52,7 @@ fn main() {
         panic!("First argument has to be file path or directory path.")
     };
 
-    let assembler_code = assembler_code::genarate_code_str(assembler_code_blocks);
+    let assembler_code: String = genarate_assembler_code(assembler_code_blocks);
 
     // vm言語から生成されたアセンブリ言語を出力するパス
     let output_path: PathBuf = {

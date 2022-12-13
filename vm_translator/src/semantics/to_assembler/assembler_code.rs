@@ -1,13 +1,7 @@
-use crate::file_context::FileContext;
-use crate::semantics;
 use schema::hack;
 
-mod arithmetic;
-mod memory_access;
-mod program_flow;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AssemblerCodeBlock {
+pub(crate) struct AssemblerCodeBlock {
     pub comment: Option<AssemblerCodeComment>,
     pub commands: Vec<hack::Command>,
 }
@@ -25,28 +19,6 @@ impl AssemblerCodeBlock {
             commands: Default::default(),
         }
     }
-}
-
-pub fn construct_code_block(
-    commands: Vec<semantics::Command>,
-    file_context: &mut FileContext,
-) -> anyhow::Result<Vec<AssemblerCodeBlock>> {
-    Ok(commands
-        .into_iter()
-        .flat_map(|command: semantics::Command| match command {
-            semantics::Command::Arithmetic(arithmetic_command) => {
-                arithmetic::construct(arithmetic_command, file_context)
-            }
-            semantics::Command::MemoryAccess(memory_access) => {
-                memory_access::construct(memory_access, file_context)
-            }
-            semantics::Command::Label(label) => vec![program_flow::construct_label(label)],
-            semantics::Command::Goto(label) => vec![program_flow::construct_goto(label)],
-            semantics::Command::IfGoto(label) => program_flow::construct_if_goto(label),
-            semantics::Command::Call { .. } => todo!(),
-            semantics::Command::Return => todo!(),
-        })
-        .collect::<Vec<_>>())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,6 +53,14 @@ impl AssemblerCodeLine {
     }
 }
 
+pub(crate) fn genarate_assembler_code(blocks: Vec<AssemblerCodeBlock>) -> String {
+    construct_code_lines(blocks)
+        .into_iter()
+        .map(AssemblerCodeLine::into_code_str)
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 // 命令番号コメント付きの行に変換する
 fn construct_code_lines(blocks: Vec<AssemblerCodeBlock>) -> Vec<AssemblerCodeLine> {
     let mut command_counter: u64 = 0;
@@ -104,14 +84,6 @@ fn construct_code_lines(blocks: Vec<AssemblerCodeBlock>) -> Vec<AssemblerCodeLin
         }
     }
     lines
-}
-
-pub fn genarate_code_str(blocks: Vec<AssemblerCodeBlock>) -> String {
-    construct_code_lines(blocks)
-        .into_iter()
-        .map(AssemblerCodeLine::into_code_str)
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 fn command_to_code(command: hack::Command) -> String {

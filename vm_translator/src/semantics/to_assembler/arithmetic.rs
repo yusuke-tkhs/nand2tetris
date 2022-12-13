@@ -1,11 +1,12 @@
-use super::AssemblerCodeBlock;
-use crate::file_context::FileContext;
+use super::assembler_code::AssemblerCodeBlock;
 use crate::semantics;
 use schema::hack;
 
-pub fn construct(
+pub(super) fn construct(
     arithmetic_command: semantics::ArithmeticCommand,
-    file_context: &mut FileContext,
+    module_name: &str,
+    function_name: &str,
+    comp_operator_counter: &mut u32,
 ) -> Vec<AssemblerCodeBlock> {
     match arithmetic_command {
         semantics::ArithmeticCommand::UnaryOperator(unary_operator) => vec![
@@ -17,7 +18,12 @@ pub fn construct(
         semantics::ArithmeticCommand::BinaryOperator(binary_operator) => vec![
             AssemblerCodeBlock::new_header_comment("Arithmetic command (Binary Operator)"),
             load_argxy_to_d_and_a(),
-            exec_binary_operator(binary_operator, file_context),
+            exec_binary_operator(
+                binary_operator,
+                module_name,
+                function_name,
+                comp_operator_counter,
+            ),
             write_binary_result_to_stack(),
         ],
     }
@@ -136,16 +142,20 @@ fn write_unary_result_to_stack() -> AssemblerCodeBlock {
 // 2変数関数を実行してDレジスタに保存
 fn exec_binary_operator(
     operator: semantics::BinaryOperator,
-    file_context: &mut FileContext,
+    module_name: &str,
+    function_name: &str,
+    comp_operator_counter: &u32,
 ) -> AssemblerCodeBlock {
     match operator {
         semantics::BinaryOperator::Mathmatical(math_op) => {
             exec_binary_mathmatical_operator(math_op)
         }
-        semantics::BinaryOperator::Comparison(comp_op) => {
-            let unique_key = file_context.publish_unique_key();
-            exec_binary_comparison_operator(comp_op, unique_key)
-        }
+        semantics::BinaryOperator::Comparison(comp_op) => exec_binary_comparison_operator(
+            comp_op,
+            module_name,
+            function_name,
+            comp_operator_counter,
+        ),
         semantics::BinaryOperator::Logical(logical_op) => exec_binary_logical_operator(logical_op),
     }
 }
@@ -168,10 +178,13 @@ fn exec_binary_mathmatical_operator(
 
 fn exec_binary_comparison_operator(
     operator: semantics::BinaryComparisonOperator,
-    unique_key: String,
+    module_name: &str,
+    function_name: &str,
+    comp_operator_counter: &u32,
 ) -> AssemblerCodeBlock {
-    let true_label = format!("RETURN_TRUE_{}", unique_key);
-    let false_label = format!("RETURN_FALSE_{}", unique_key);
+    let unique_path = format!("{module_name}.{function_name}.{comp_operator_counter}");
+    let true_label = format!("RETURN_TRUE_{}", unique_path);
+    let false_label = format!("RETURN_FALSE_{}", unique_path);
 
     AssemblerCodeBlock::new(
         "execute binary comparison operator",

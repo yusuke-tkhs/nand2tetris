@@ -1,4 +1,9 @@
 mod from_schema;
+mod to_assembler;
+
+pub(crate) use to_assembler::assembler_code::genarate_assembler_code;
+pub(crate) use to_assembler::assembler_code::AssemblerCodeBlock;
+
 // ファイルはモジュールと仮定する
 #[allow(dead_code)]
 pub struct Module {

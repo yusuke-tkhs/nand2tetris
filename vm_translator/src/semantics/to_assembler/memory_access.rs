@@ -1,11 +1,10 @@
-use super::AssemblerCodeBlock;
-use crate::file_context::FileContext;
+use super::assembler_code::AssemblerCodeBlock;
 use crate::semantics;
 use schema::hack;
 
-pub fn construct(
+pub(super) fn construct(
     memory_access: semantics::MemoryAccessCommand,
-    file_context: &FileContext,
+    module_name: &str,
 ) -> Vec<AssemblerCodeBlock> {
     match memory_access {
         semantics::MemoryAccessCommand::Push(push_source) => {
@@ -25,7 +24,7 @@ pub fn construct(
                             "Push value in static variable {index}"
                         )),
                         load_value_to_d_by_symbol_address(static_variable_symbol_name(
-                            file_context.file_name(),
+                            module_name,
                             index,
                         )),
                         write_d_to_stack(),
@@ -67,10 +66,7 @@ pub fn construct(
                     AssemblerCodeBlock::new_header_comment(&format!(
                         "Pop value to static variable {index}"
                     )),
-                    load_symbol_value_to_d(static_variable_symbol_name(
-                        file_context.file_name(),
-                        index,
-                    )),
+                    load_symbol_value_to_d(static_variable_symbol_name(module_name, index)),
                     pop_to_address_written_in_d(),
                 ]
             }
@@ -102,12 +98,12 @@ pub fn construct(
     }
 }
 
-fn static_variable_symbol_name(module_name: String, index: u16) -> String {
+fn static_variable_symbol_name(module_name: &str, index: u16) -> String {
     format!("{module_name}.{index}")
 }
 
 // スタックポインタが示すメモリ位置にDレジスタの値を書き込むコマンド
-fn write_d_to_stack() -> AssemblerCodeBlock {
+pub(crate) fn write_d_to_stack() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "push D register value to stack",
         &[
@@ -141,7 +137,7 @@ fn write_d_to_stack() -> AssemblerCodeBlock {
 // 定数値をDレジスタに書き込む
 // @index
 // D=A
-fn load_constant_to_d(value: u16) -> AssemblerCodeBlock {
+pub(crate) fn load_constant_to_d(value: u16) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         format!("load constant value {value} to D register").as_str(),
         &[

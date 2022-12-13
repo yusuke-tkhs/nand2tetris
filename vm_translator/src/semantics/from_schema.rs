@@ -3,12 +3,12 @@ use schema::vm;
 
 #[allow(dead_code)]
 impl Module {
-    fn try_from_commands(
-        module_name: String,
+    pub(crate) fn try_from_commands(
+        module_name: &str,
         vm_commands: Vec<vm::Command>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
-            name: module_name,
+            name: module_name.to_string(),
             functions: Function::try_from_commands(vm_commands)?,
         })
     }

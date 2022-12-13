@@ -1,4 +1,4 @@
-use super::AssemblerCodeBlock;
+use super::assembler_code::AssemblerCodeBlock;
 use schema::hack;
 
 pub(super) fn construct_label(label: String) -> AssemblerCodeBlock {
