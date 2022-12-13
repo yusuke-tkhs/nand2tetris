@@ -1,7 +1,6 @@
 use super::*;
 use schema::vm;
 
-#[allow(dead_code)]
 impl Module {
     pub(crate) fn try_from_commands(
         module_name: &str,
@@ -14,7 +13,6 @@ impl Module {
     }
 }
 
-#[allow(dead_code)]
 impl Function {
     fn try_from_commands(vm_commands: Vec<vm::Command>) -> anyhow::Result<Vec<Self>> {
         let each_function_vm_commands = separate(vm_commands, |vm_command| {

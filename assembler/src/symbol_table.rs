@@ -73,7 +73,6 @@ impl SymbolTable {
         Self(symbol_table)
     }
 
-    #[allow(dead_code)]
     pub fn get(&self, symbol: &hack::Symbol) -> Option<u16> {
         self.0.get(symbol).copied()
     }

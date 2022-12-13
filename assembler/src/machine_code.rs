@@ -1,7 +1,6 @@
 use crate::symbol_table::SymbolTable;
 use schema::hack::*;
 
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Instruction {
     A(u16),
@@ -133,7 +132,6 @@ impl Instruction {
     }
 }
 
-#[allow(dead_code)]
 pub fn construct(
     symbol_table: &SymbolTable,
     commands: Vec<Command>,
@@ -148,7 +146,6 @@ pub fn construct(
         .collect::<anyhow::Result<Vec<_>>>()
 }
 
-#[allow(dead_code)]
 pub fn generate(instructions: Vec<Instruction>) -> String {
     instructions
         .into_iter()
