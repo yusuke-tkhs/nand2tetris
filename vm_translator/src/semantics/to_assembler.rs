@@ -25,7 +25,7 @@ impl Function {
     fn into_code_blocks(self, module_name: &str) -> Vec<AssemblerCodeBlock> {
         let mut comp_operator_counter: u32 = 0;
         [
-            AssemblerCodeBlock::new_header_comment("function decleration"),
+            AssemblerCodeBlock::new_header_comment("function definition"),
             AssemblerCodeBlock::new(
                 "define function label",
                 &[hack::Command::L(hack::Symbol::new(
@@ -36,12 +36,17 @@ impl Function {
         .into_iter()
         .chain(
             // ローカル変数の初期化
-            std::iter::repeat([
-                memory_access::load_constant_to_d(0),
-                memory_access::write_d_to_stack(),
-            ])
-            .take(self.local_variable_count as usize)
-            .flatten(),
+            (0..self.local_variable_count as usize)
+                .into_iter()
+                .flat_map(|i| {
+                    [
+                        AssemblerCodeBlock::new_comment(&format!(
+                            "initialize local variable ({i})"
+                        )),
+                        memory_access::load_constant_to_d(0),
+                        memory_access::write_d_to_stack(),
+                    ]
+                }),
         )
         .chain(
             // 関数内のコマンド群

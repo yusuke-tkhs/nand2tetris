@@ -13,6 +13,12 @@ impl AssemblerCodeBlock {
             commands: commands.to_vec(),
         }
     }
+    pub fn new_comment(comment: &str) -> Self {
+        Self {
+            comment: Some(AssemblerCodeComment::new(comment)),
+            commands: Default::default(),
+        }
+    }
     pub fn new_header_comment(comment: &str) -> Self {
         Self {
             comment: Some(AssemblerCodeComment::new(format!("[{comment}]").as_str())),
