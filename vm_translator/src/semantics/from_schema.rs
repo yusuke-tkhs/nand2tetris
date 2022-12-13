@@ -24,14 +24,14 @@ impl Function {
             .into_iter()
             .map(|commands| {
                 let Some((
-                    vm::Command::Function { name, args_count },
+                    vm::Command::Function { name, local_variable_count },
                     rest_commands
                 )) = commands.split_first() else {
                     anyhow::bail!("all commands should be written in function!");
                 };
                 Ok(Self {
                     name: name.get().to_string(),
-                    args_count: *args_count,
+                    local_variable_count: *local_variable_count,
                     commands: rest_commands
                         .iter()
                         .cloned()

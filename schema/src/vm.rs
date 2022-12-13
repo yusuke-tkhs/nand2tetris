@@ -6,8 +6,14 @@ pub use parser::parse;
 pub enum Command {
     Arithmetic(ArithmeticCommand),
     MemoryAccess(MemoryAccessCommand),
-    Function { name: Label, args_count: u16 },
-    Call { name: Label, args_count: u16 },
+    Function {
+        name: Label,
+        local_variable_count: u16,
+    },
+    Call {
+        name: Label,
+        args_count: u16,
+    },
     Return,
     Label(Label),
     Goto(Label),

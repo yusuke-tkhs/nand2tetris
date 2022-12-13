@@ -48,7 +48,7 @@ parser! {
         (string("function").and(space()))
             .with(
                 label().skip(space()).and(crate::parser::p_u16()))
-                .map(|(name, args_count)|Command::Function { name, args_count}
+                .map(|(name, local_variable_count)|Command::Function { name, local_variable_count}
             )
     }
 }
@@ -203,7 +203,7 @@ mod tests {
             "function hoge 12",
             Command::Function {
                 name: Label::new("hoge"),
-                args_count: 12,
+                local_variable_count: 12,
             },
         );
         easy_parser_assert(

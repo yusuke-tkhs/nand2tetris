@@ -9,7 +9,7 @@ pub struct Module {
 #[allow(dead_code)]
 pub struct Function {
     name: String,
-    args_count: u16,
+    local_variable_count: u16,
     commands: Vec<Command>,
 }
 
