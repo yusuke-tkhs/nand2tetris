@@ -1,4 +1,6 @@
 mod arithmetic;
+mod function_call;
+mod function_return;
 mod memory_access;
 mod program_flow;
 
@@ -24,6 +26,7 @@ impl Function {
     }
     fn into_code_blocks(self, module_name: &str) -> Vec<AssemblerCodeBlock> {
         let mut comp_operator_counter: u32 = 0;
+        let mut return_command_counter: u32 = 0;
         [
             AssemblerCodeBlock::new_header_comment("function definition"),
             AssemblerCodeBlock::new(
@@ -51,7 +54,12 @@ impl Function {
         .chain(
             // 関数内のコマンド群
             self.commands.into_iter().flat_map(|command| {
-                command.into_code_blocks(module_name, &self.name, &mut comp_operator_counter)
+                command.into_code_blocks(
+                    module_name,
+                    &self.name,
+                    &mut comp_operator_counter,
+                    &mut return_command_counter,
+                )
             }),
         )
         .collect()
@@ -64,6 +72,7 @@ impl Command {
         module_name: &str,
         function_name: &str,
         comp_operator_counter: &mut u32,
+        return_command_counter: &mut u32,
     ) -> Vec<AssemblerCodeBlock> {
         match self {
             semantics::Command::Arithmetic(arithmetic_command) => arithmetic::construct(
@@ -78,8 +87,14 @@ impl Command {
             semantics::Command::Label(label) => vec![program_flow::construct_label(label)],
             semantics::Command::Goto(label) => vec![program_flow::construct_goto(label)],
             semantics::Command::IfGoto(label) => program_flow::construct_if_goto(label),
-            semantics::Command::Call { .. } => todo!(),
-            semantics::Command::Return => todo!(),
+            semantics::Command::Call { name, args_count } => function_call::construct(
+                name,
+                args_count,
+                module_name,
+                function_name,
+                return_command_counter,
+            ),
+            semantics::Command::Return => function_return::construct(),
         }
     }
 }

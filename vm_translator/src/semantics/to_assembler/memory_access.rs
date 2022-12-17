@@ -153,7 +153,7 @@ pub(crate) fn load_constant_to_d(value: u16) -> AssemblerCodeBlock {
 
 // Dレジスタに保存されたアドレス値が指し示す
 // メモリ位置の値をDレジスタに書き込む
-fn load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
+pub(crate) fn load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load value specified by address in D register to D register",
         &[
@@ -175,7 +175,7 @@ fn load_value_specified_by_address_in_d() -> AssemblerCodeBlock {
 }
 
 // symbol 値のアドレスが指し示す値をDレジスタに書き込む
-fn load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCodeBlock {
+pub(crate) fn load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load value to D register by symbol address",
         &[
@@ -194,7 +194,7 @@ fn load_value_to_d_by_symbol_address(symbol_name: String) -> AssemblerCodeBlock 
 }
 
 // symbol 値自体をDレジスタに書き込む
-fn load_symbol_value_to_d(symbol_name: String) -> AssemblerCodeBlock {
+pub(crate) fn load_symbol_value_to_d(symbol_name: String) -> AssemblerCodeBlock {
     AssemblerCodeBlock::new(
         "load symbol value to D register",
         &[
