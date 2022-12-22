@@ -26,7 +26,7 @@ fn main() {
 
     let input_arg_path: &Path = Path::new(args.get(1).unwrap());
 
-    let assembler_code_blocks: Vec<AssemblerCodeBlock> = if input_arg_path.is_dir() {
+    let (output_path, assembler_code_blocks) = if input_arg_path.is_dir() {
         let input_files: Vec<PathBuf> = std::fs::read_dir(input_arg_path)
             .unwrap()
             .into_iter()
@@ -39,30 +39,40 @@ fn main() {
             panic!(".vm files could not be found in the input path");
         }
 
-        input_files
+        let assembler_code_blocks = input_files
             .into_iter()
             .flat_map(construct_assembler_code_blocks)
-            .collect()
+            .collect();
+
+        // vm言語から生成されたアセンブリ言語を出力するパス
+        let output_path: PathBuf = input_arg_path.join(format!(
+            "{}.asm",
+            input_arg_path.file_stem().unwrap().to_str().unwrap()
+        ));
+
+        (output_path, assembler_code_blocks)
     } else if input_arg_path.is_file() {
         if input_arg_path.extension().unwrap() != std::ffi::OsStr::new("vm") {
             panic!("input file has to be .vm file");
         }
-        construct_assembler_code_blocks(input_arg_path)
+        let assembler_code_blocks = construct_assembler_code_blocks(input_arg_path);
+
+        // vm言語から生成されたアセンブリ言語を出力するパス
+        let output_path: PathBuf = {
+            let mut path = std::path::PathBuf::from(input_arg_path.parent().unwrap());
+            path.push(format!(
+                "{}.asm",
+                input_arg_path.file_stem().unwrap().to_str().unwrap()
+            ));
+            path
+        };
+
+        (output_path, assembler_code_blocks)
     } else {
         panic!("First argument has to be file path or directory path.")
     };
 
     let assembler_code: String = genarate_assembler_code(assembler_code_blocks);
-
-    // vm言語から生成されたアセンブリ言語を出力するパス
-    let output_path: PathBuf = {
-        let mut path = std::path::PathBuf::from(input_arg_path.parent().unwrap());
-        path.push(format!(
-            "{}.asm",
-            input_arg_path.file_stem().unwrap().to_str().unwrap()
-        ));
-        path
-    };
 
     std::fs::write(output_path, assembler_code).unwrap();
 }
