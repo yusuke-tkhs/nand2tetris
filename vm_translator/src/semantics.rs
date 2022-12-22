@@ -4,6 +4,11 @@ mod to_assembler;
 pub(crate) use to_assembler::assembler_code::genarate_assembler_code;
 pub(crate) use to_assembler::assembler_code::AssemblerCodeBlock;
 
+// 複数のモジュールが１つの実行単位を構成する
+pub struct Executable {
+    modules: Vec<Module>
+}
+
 // ファイルはモジュールと仮定する
 pub struct Module {
     name: String,

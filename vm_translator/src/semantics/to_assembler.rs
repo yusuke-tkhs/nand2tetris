@@ -11,6 +11,54 @@ use schema::hack;
 
 pub(super) mod assembler_code;
 
+fn bootstrap_code() -> Vec<AssemblerCodeBlock> {
+    use memory_access::load_constant_to_d;
+    // use memory_access::
+    
+    vec![
+        AssemblerCodeBlock::new_header_comment("bootstrap"),
+        load_constant_to_d(256),
+        AssemblerCodeBlock::new(
+            "write 256 to SP",
+            &[
+                hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("SP"))),
+                hack::Command::C(hack::CCommand {
+                    dest: Some(hack::DestMnemonic::M),
+                    comp: hack::CompMnemonic::D,
+                    jump: None,
+                }),
+            ]
+        ),
+        AssemblerCodeBlock::new(
+            "call Sys.init (simply Jump to 'Sys.init symbol')",
+            &[
+                hack::Command::A(hack::ACommand::Symbol(hack::Symbol::new("Sys.init"))),
+                hack::Command::C(hack::CCommand {
+                    dest: None,
+                    comp: hack::CompMnemonic::Zero,
+                    jump: Some(hack::JumpMnemonic::JMP),
+                }),
+            ]
+        )
+    ]
+    
+}
+
+// TODO
+// これをつかってBootstrapCodeが出るようにする
+impl Executable {
+    pub(crate) fn into_code_blocks(self) -> Vec<AssemblerCodeBlock> {
+        bootstrap_code()
+        .into_iter()
+        .chain(
+            self.modules
+            .into_iter()
+            .flat_map(|f| f.into_code_blocks())
+        )
+        .collect()
+    }
+}
+
 impl Module {
     pub(crate) fn into_code_blocks(self) -> Vec<AssemblerCodeBlock> {
         self.functions
@@ -21,9 +69,9 @@ impl Module {
 }
 
 impl Function {
-    fn full_name(&self, module_name: &str) -> String {
-        format!("func_{}.{}", module_name, self.name)
-    }
+    // fn full_name(&self, module_name: &str) -> String {
+    //     format!("func_{}.{}", module_name, self.name)
+    // }
     fn into_code_blocks(self, module_name: &str) -> Vec<AssemblerCodeBlock> {
         let mut comp_operator_counter: u32 = 0;
         let mut return_command_counter: u32 = 0;
@@ -32,7 +80,9 @@ impl Function {
             AssemblerCodeBlock::new(
                 "define function label",
                 &[hack::Command::L(hack::Symbol::new(
-                    &self.full_name(module_name),
+                    // &self.full_name(module_name),
+                    // vm言語の関数名は、高級言語の'クラス名.関数名'の名前になるからこれでよい
+                    &self.name,
                 ))],
             ),
         ]
