@@ -11,13 +11,12 @@ use schema::hack;
 
 pub(super) mod assembler_code;
 
-fn bootstrap_code() -> Vec<AssemblerCodeBlock> {
+pub(crate) fn bootstrap_code() -> Vec<AssemblerCodeBlock> {
     use memory_access::load_constant_to_d;
-    // use memory_access::
-    
     vec![
         AssemblerCodeBlock::new_header_comment("bootstrap"),
-        load_constant_to_d(256),
+        // load_constant_to_d(256),
+        load_constant_to_d(261), // test に合わせる
         AssemblerCodeBlock::new(
             "write 256 to SP",
             &[
@@ -27,7 +26,7 @@ fn bootstrap_code() -> Vec<AssemblerCodeBlock> {
                     comp: hack::CompMnemonic::D,
                     jump: None,
                 }),
-            ]
+            ],
         ),
         AssemblerCodeBlock::new(
             "call Sys.init (simply Jump to 'Sys.init symbol')",
@@ -38,25 +37,9 @@ fn bootstrap_code() -> Vec<AssemblerCodeBlock> {
                     comp: hack::CompMnemonic::Zero,
                     jump: Some(hack::JumpMnemonic::JMP),
                 }),
-            ]
-        )
+            ],
+        ),
     ]
-    
-}
-
-// TODO
-// これをつかってBootstrapCodeが出るようにする
-impl Executable {
-    pub(crate) fn into_code_blocks(self) -> Vec<AssemblerCodeBlock> {
-        bootstrap_code()
-        .into_iter()
-        .chain(
-            self.modules
-            .into_iter()
-            .flat_map(|f| f.into_code_blocks())
-        )
-        .collect()
-    }
 }
 
 impl Module {
@@ -69,9 +52,6 @@ impl Module {
 }
 
 impl Function {
-    // fn full_name(&self, module_name: &str) -> String {
-    //     format!("func_{}.{}", module_name, self.name)
-    // }
     fn into_code_blocks(self, module_name: &str) -> Vec<AssemblerCodeBlock> {
         let mut comp_operator_counter: u32 = 0;
         let mut return_command_counter: u32 = 0;

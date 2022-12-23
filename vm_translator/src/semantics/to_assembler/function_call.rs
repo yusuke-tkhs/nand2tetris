@@ -17,6 +17,9 @@ pub(super) fn construct(
     *return_command_counter += 1;
 
     [
+        vec![AssemblerCodeBlock::new_header_comment(&format!(
+            "call {called_function_name}"
+        ))],
         push_symbol_value_to_stack(&return_label),
         push_symbol_referencing_value_to_stack("LCL"),
         push_symbol_referencing_value_to_stack("ARG"),

@@ -1,6 +1,6 @@
 use core::panic;
 use schema::vm;
-use semantics::{genarate_assembler_code, AssemblerCodeBlock, Module};
+use semantics::{bootstrap_code, genarate_assembler_code, AssemblerCodeBlock, Module};
 use std::path::{Path, PathBuf};
 
 mod semantics;
@@ -72,7 +72,12 @@ fn main() {
         panic!("First argument has to be file path or directory path.")
     };
 
-    let assembler_code: String = genarate_assembler_code(assembler_code_blocks);
+    let assembler_code: String = genarate_assembler_code(
+        bootstrap_code()
+            .into_iter()
+            .chain(assembler_code_blocks.into_iter())
+            .collect(),
+    );
 
     std::fs::write(output_path, assembler_code).unwrap();
 }
