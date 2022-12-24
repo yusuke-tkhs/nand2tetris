@@ -15,8 +15,11 @@ pub(crate) fn bootstrap_code() -> Vec<AssemblerCodeBlock> {
     use memory_access::load_constant_to_d;
     vec![
         AssemblerCodeBlock::new_header_comment("bootstrap"),
-        // load_constant_to_d(256),
-        load_constant_to_d(261), // test に合わせる
+        load_constant_to_d(256),
+        // load_constant_to_d(261), // FibonatchElement 及び StaticTest をパスするためにはこちらにする
+        // 8章の.tst ファイルに一部間違いがある気がする。
+        // VMEmulatorを動作させた結果が、テストの.cmpと一致しない。
+        // 現時点でのコードはひとまずVMEmulatorと同じ挙動をしているのでテストOKとする
         AssemblerCodeBlock::new(
             "write 256 to SP",
             &[
