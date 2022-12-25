@@ -8,6 +8,7 @@ fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<jack::To
     jack::tokenize(input)
 }
 
+// TODO フォルダ指定したら、各ファイル毎に結果のファイルを出力するように変更する
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
