@@ -1,4 +1,12 @@
 mod tokenizer;
+mod xml;
+
+use crate::parsable_enum;
+use combine::parser::char::string;
+use combine::parser::choice::choice;
+use combine::parser::token::value;
+use combine::Stream;
+use combine::{attempt, parser};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Token {
@@ -9,50 +17,54 @@ pub enum Token {
     Identifier(String),
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Keyword {
-    Class,
-    Constructor,
-    Function,
-    Method,
-    Field,
-    Static,
-    Var,
-    Int,
-    Char,
-    Boolean,
-    Void,
-    True,
-    False,
-    Null,
-    This,
-    Let,
-    Do,
-    If,
-    Else,
-    While,
-    Return,
+parsable_enum! {
+    #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Keyword {
+        Class: "class",
+        Constructor: "constructor",
+        Function: "function",
+        Method: "method",
+        Field: "field",
+        Static: "static",
+        Var: "var",
+        Int: "int",
+        Char: "char",
+        Boolean: "boolean",
+        Void: "void",
+        True: "true",
+        False: "false",
+        Null: "null",
+        This: "this",
+        Let: "let",
+        Do: "do",
+        If: "if",
+        Else: "else",
+        While: "while",
+        Return: "return",
+    }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Symbol {
-    WaveBracketStart,  // {
-    WaveBracketEnd,    // }
-    RoundBracketStart, // (
-    RoundBracketEnd,   // )
-    SqareBracketStart, // [
-    SquareBracketEnd,  // ]
-    Dot,               // .
-    Comma,             // ,
-    SemiColon,         // ;
-    Plus,              // +
-    Minus,             // -
-    Asterisk,          // *
-    Slash,             // /
-    And,               // &
-    Pipe,              // |
-    AngleBracketStart, // <
-    AngleBracketEnd,   // >
-    Equal,             // =
-    Tilde,             // ~
+parsable_enum! {
+    #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Symbol {
+        WaveBracketStart: "{",
+        WaveBracketEnd: "}",
+        RoundBracketStart: "(",
+        RoundBracketEnd: ")",
+        SqareBracketStart: "[",
+        SquareBracketEnd: "]",
+        Dot: ".",
+        Comma: ",",
+        SemiColon: ";",
+        Plus: "+",
+        Minus: "-",
+        Asterisk: "*",
+        Slash: "/",
+        And: "&",
+        Pipe: "|",
+        AngleBracketStart: "<",
+        AngleBracketEnd: ">",
+        Equal: "=",
+        Tilde: "~",
+    }
 }

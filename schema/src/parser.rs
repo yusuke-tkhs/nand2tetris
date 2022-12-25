@@ -1,11 +1,8 @@
 use crate::constant::DIGIT_CHAR;
-use combine::attempt;
+
 use combine::error::StreamError;
 use combine::one_of;
 use combine::parser;
-use combine::parser::char::string;
-use combine::parser::choice::choice;
-use combine::parser::token::value;
 use combine::stream::RangeStream;
 use combine::stream::StreamErrorFor;
 use combine::stream::StreamOnce;
@@ -27,7 +24,6 @@ macro_rules! parsable_enum{
         $enum_vis enum $enum_name {
             $($case_name),+
         }
-
         impl $enum_name {
             $enum_vis fn parser<Input>() -> impl combine::Parser<Input, Output = $enum_name>
             where Input: Stream<Token = char>
@@ -54,6 +50,11 @@ macro_rules! parsable_enum{
 
 #[test]
 fn test_parsable_enum() {
+    use combine::parser::char::string;
+    use combine::parser::choice::choice;
+    use combine::parser::token::value;
+    use combine::Stream;
+    use combine::{attempt, parser};
     use tests::easy_parser_assert;
     parsable_enum! {
         #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
