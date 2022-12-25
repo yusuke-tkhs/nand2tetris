@@ -1,5 +1,4 @@
 mod tokenizer;
-mod xml;
 
 use crate::parsable_enum;
 use combine::parser::char::string;
@@ -7,6 +6,8 @@ use combine::parser::choice::choice;
 use combine::parser::token::value;
 use combine::Stream;
 use combine::{attempt, parser};
+
+pub use tokenizer::tokenize;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Token {
