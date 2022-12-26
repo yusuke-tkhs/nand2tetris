@@ -1,6 +1,6 @@
 use schema::jack::Token;
 
-pub fn output_tokens_xml(tokens: Vec<Token>) -> String {
+pub fn tokens_to_xml(tokens: Vec<Token>) -> String {
     std::iter::once("<tokens>".to_string())
         .chain(
             tokens

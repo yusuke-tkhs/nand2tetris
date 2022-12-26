@@ -1,12 +1,9 @@
 use super::*;
 use crate::parser::{easily_parse, not_digit_starts_str, p_u16};
 use crate::pre_processor::{remove_comment, remove_inline_comment, split_by_newline};
-use combine::parser::char::char;
-use combine::parser::char::string;
 use combine::parser::choice::choice;
 use combine::parser::repeat::{many, many1};
-use combine::parser::token::value;
-use combine::{attempt, satisfy};
+use combine::satisfy;
 use combine::{between, parser, Stream};
 
 pub fn tokenize(code: String) -> anyhow::Result<Vec<Token>> {

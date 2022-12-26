@@ -8,13 +8,20 @@ fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<jack::To
     jack::tokenize(input)
 }
 
+// jack言語から生成されたxml言語を出力するパス
+fn output_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
+    let stem = path.as_ref().file_stem()?.to_str()?;
+    let parent = path.as_ref().parent()?;
+    Some(parent.join(format!("{stem}_by_compiler.xml")))
+}
+
 // TODO フォルダ指定したら、各ファイル毎に結果のファイルを出力するように変更する
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     let input_arg_path: &Path = Path::new(args.get(1).unwrap());
 
-    let (output_path, tokens) = if input_arg_path.is_dir() {
+    if input_arg_path.is_dir() {
         let input_files: Vec<PathBuf> = std::fs::read_dir(input_arg_path)
             .unwrap()
             .into_iter()
@@ -27,38 +34,23 @@ fn main() {
             panic!(".jack files could not be found in the input path");
         }
 
-        let tokens = input_files
-            .into_iter()
-            .flat_map(|path| construct_tokens(path).unwrap())
-            .collect();
-
-        // jack言語から生成されたxml言語を出力するパス
-        let output_path: PathBuf = input_arg_path.join(format!(
-            "{}.xml",
-            input_arg_path.file_stem().unwrap().to_str().unwrap()
-        ));
-
-        (output_path, tokens)
+        input_files.into_iter().for_each(|path| {
+            let tokens = construct_tokens(&path).unwrap();
+            let xml = xml::tokens_to_xml(tokens);
+            std::fs::write(output_xml_path(&path).unwrap(), xml).unwrap();
+        });
     } else if input_arg_path.is_file() {
         if input_arg_path.extension().unwrap() != std::ffi::OsStr::new("jack") {
             panic!("input file has to be .jack file");
         }
         let tokens = construct_tokens(input_arg_path).unwrap();
 
-        // jack言語から生成されたxmlを出力するパス
-        let output_path: PathBuf = {
-            let mut path = std::path::PathBuf::from(input_arg_path.parent().unwrap());
-            path.push(format!(
-                "{}.xml",
-                input_arg_path.file_stem().unwrap().to_str().unwrap()
-            ));
-            path
-        };
-
-        (output_path, tokens)
+        std::fs::write(
+            output_xml_path(input_arg_path).unwrap(),
+            xml::tokens_to_xml(tokens),
+        )
+        .unwrap();
     } else {
         panic!("First argument has to be file path or directory path.")
     };
-
-    std::fs::write(output_path, xml::output_tokens_xml(tokens)).unwrap();
 }
