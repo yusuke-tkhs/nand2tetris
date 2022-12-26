@@ -1,6 +1,10 @@
 use super::*;
 use crate::parser::{easily_parse, not_digit_starts_str, p_u16};
-use crate::pre_processor::{remove_comment, remove_inline_comment, split_by_newline};
+use crate::pre_processor::{
+    remove_comment, remove_inline_comment, split_by_newline, trim_whitespace,
+};
+use combine::optional;
+use combine::parser::char::space;
 use combine::parser::choice::choice;
 use combine::parser::repeat::{many, many1};
 use combine::satisfy;
@@ -10,20 +14,12 @@ pub fn tokenize(code: String) -> anyhow::Result<Vec<Token>> {
     let pre_processed = split_by_newline(code)
         .map(remove_comment)
         .map(remove_inline_comment)
-        .collect::<anyhow::Result<Vec<_>>>()?;
-    Ok(pre_processed
-        .into_iter()
-        .map(tokenize_line)
+        .map(|s| s.map(trim_whitespace))
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()
-        .flatten()
-        .collect())
-}
-
-fn tokenize_line(line: String) -> anyhow::Result<Vec<Token>> {
-    Ok(line
-        .split_whitespace()
-        .map(parse_tokens)
+        .filter(|s| !s.is_empty());
+    Ok(pre_processed
+        .map(|s| parse_tokens(&s))
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()
         .flatten()
@@ -38,7 +34,7 @@ parser! {
     fn tokens[Input]()(Input) -> Vec<Token>
     where [Input: Stream<Token = char>]
     {
-        many1(token())
+        many1(optional(space()).with(token()).skip(optional(space())))
     }
 }
 
@@ -78,6 +74,26 @@ parser! {
 mod tests {
     use super::*;
     use crate::parser::tests::easy_parser_assert;
+    #[test]
+    fn test_tokenize() {
+        let res =
+            parse_tokens("\tlet length = Keyboard.readInt(\"HOW MANY NUMBERS? \");\r").unwrap();
+        assert_eq!(
+            res,
+            vec![
+                Token::Keyword(Keyword::Let),
+                Token::Identifier("length".to_string()),
+                Token::Symbol(Symbol::Equal,),
+                Token::Identifier("Keyboard".to_string()),
+                Token::Symbol(Symbol::Dot,),
+                Token::Identifier("readInt".to_string()),
+                Token::Symbol(Symbol::RoundBracketStart),
+                Token::StringConstant("HOW MANY NUMBERS? ".to_string()),
+                Token::Symbol(Symbol::RoundBracketEnd),
+                Token::Symbol(Symbol::SemiColon),
+            ]
+        )
+    }
 
     #[test]
     fn parse_token() {
