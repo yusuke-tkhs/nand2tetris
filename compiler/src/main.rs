@@ -20,7 +20,6 @@ fn output_tokens_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
     output_xml_path(path, "T_by_compiler")
 }
 
-// TODO フォルダ指定したら、各ファイル毎に結果のファイルを出力するように変更する
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 

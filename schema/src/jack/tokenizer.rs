@@ -1,7 +1,7 @@
 use super::*;
 use crate::parser::{easily_parse, not_digit_starts_str, p_u16};
 use crate::pre_processor::{
-    remove_comment, remove_inline_comment, split_by_newline, trim_whitespace,
+    remove_comment, remove_multi_line_comment, split_by_newline, trim_whitespace,
 };
 use combine::optional;
 use combine::parser::char::space;
@@ -11,13 +11,11 @@ use combine::satisfy;
 use combine::{between, parser, Stream};
 
 pub fn tokenize(code: String) -> anyhow::Result<Vec<Token>> {
-    let pre_processed = split_by_newline(code)
+    let pre_processed = split_by_newline(remove_multi_line_comment(code)?)
         .map(remove_comment)
-        .map(remove_inline_comment)
-        .map(|s| s.map(trim_whitespace))
-        .collect::<anyhow::Result<Vec<_>>>()?
-        .into_iter()
+        .map(trim_whitespace)
         .filter(|s| !s.is_empty());
+
     Ok(pre_processed
         .map(|s| parse_tokens(&s))
         .collect::<anyhow::Result<Vec<_>>>()?

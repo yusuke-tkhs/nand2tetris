@@ -29,7 +29,7 @@ pub(crate) fn remove_comment(line: String) -> String {
 
 /// インラインコメントの削除
 /// /* */ or /** */
-pub(crate) fn remove_inline_comment(line: String) -> anyhow::Result<String> {
+pub(crate) fn remove_multi_line_comment(line: String) -> anyhow::Result<String> {
     let find_str = |pat: &str, start: usize| -> Option<usize> {
         line[start..].find(pat).map(|pos| pos + start)
     };
@@ -53,14 +53,14 @@ fn test_remove_inline_comment() {
     // コメント無し
     let line_with_inline_comment = "let x = 10;".to_string();
     assert_eq!(
-        remove_inline_comment(line_with_inline_comment).unwrap(),
+        remove_multi_line_comment(line_with_inline_comment).unwrap(),
         "let x = 10;"
     );
 
     // 単一のコメント
     let line_with_inline_comment = "let x = /* this is sentence */ 10;".to_string();
     assert_eq!(
-        remove_inline_comment(line_with_inline_comment).unwrap(),
+        remove_multi_line_comment(line_with_inline_comment).unwrap(),
         "let x =  10;"
     );
 
@@ -68,17 +68,28 @@ fn test_remove_inline_comment() {
     let line_with_inline_comment =
         "let /* this is variable name */ x = /* this is integer constant */ 10;".to_string();
     assert_eq!(
-        remove_inline_comment(line_with_inline_comment).unwrap(),
+        remove_multi_line_comment(line_with_inline_comment).unwrap(),
         "let  x =  10;"
     );
 
     // APIコメント
     let line_with_inline_comment = "/** api description */".to_string();
-    assert_eq!(remove_inline_comment(line_with_inline_comment).unwrap(), "");
+    assert_eq!(
+        remove_multi_line_comment(line_with_inline_comment).unwrap(),
+        ""
+    );
 
     // 閉じていないコメント
     let line_with_open_inline_comment = "let x = /* this is sentence 10;".to_string();
-    assert!(remove_inline_comment(line_with_open_inline_comment).is_err());
+    assert!(remove_multi_line_comment(line_with_open_inline_comment).is_err());
+
+    // 複数行のコメント
+    let multiline_commented_code =
+        "/* this is \n\t a \n multiline comment\n\t*/\nlet x = 10;".to_string();
+    assert_eq!(
+        remove_multi_line_comment(multiline_commented_code).unwrap(),
+        "\nlet x = 10;"
+    );
 }
 
 /// 空行でないことを保証する

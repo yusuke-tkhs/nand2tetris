@@ -12,9 +12,23 @@ pub fn tokens_to_xml(tokens: Vec<Token>) -> String {
                     Token::StringConstant(s) => ("stringConstant", s),
                     Token::Identifier(s) => ("identifier", s),
                 })
-                .map(|(key_name, value)| format!("<{key_name}> {value} </{key_name}>")),
+                .map(|(key_name, value)| {
+                    let sanitized_value = sanitize(value);
+                    format!("<{key_name}> {sanitized_value} </{key_name}>")
+                }),
         )
         .chain(std::iter::once("</tokens>".to_string()))
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn sanitize(s: String) -> String {
+    s.chars()
+        .map(|c| match c {
+            '<' => "&lt;".to_string(),
+            '>' => "&gt;".to_string(),
+            '&' => "&amp;".to_string(),
+            _ => c.to_string(),
+        })
+        .collect()
 }
