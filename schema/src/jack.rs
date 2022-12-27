@@ -1,3 +1,4 @@
+mod jack_parser;
 mod tokenizer;
 
 use crate::parsable_enum;
@@ -17,6 +18,8 @@ pub enum Token {
     StringConstant(String),
     Identifier(String),
 }
+
+//impl std::fmt::Display for Token {}
 
 parsable_enum! {
     #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
