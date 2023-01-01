@@ -111,6 +111,39 @@ macro_rules! keyword_parsable_enum{
     }
 }
 
+#[macro_export]
+macro_rules! symbol_parsable_enum{
+    (
+        $(#[$attr:meta])*
+        $enum_vis: vis enum $enum_name: ident {
+            $(
+                $case_name: ident: $symbol_name: ident
+            ),+$(,)?
+        }
+    ) => {
+        $(#[$attr])*
+        $enum_vis enum $enum_name {
+            $($case_name),+
+        }
+        impl $enum_name {
+            $enum_vis fn parser<Input>() -> impl combine::Parser<Input, Output = Self>
+            where Input: Stream<Token = Token>
+            {
+                parser! {
+                    fn inner_fn[Input]()(Input) -> $enum_name
+                    where [Input: Stream<Token = Token>]
+                    {
+                        choice([
+                            $(symbol(Symbol::$symbol_name).with(value($enum_name::$case_name))),+
+                        ])
+                    }
+                }
+                inner_fn()
+            }
+        }
+    }
+}
+
 // pub(crate) fn easily_parse_token<'a, O, F, Fout>(
 //     parser_generator: F,
 //     input: &'a [Token],

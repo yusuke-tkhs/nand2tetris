@@ -1,4 +1,3 @@
-use super::subroutine_call::{subroutine_call, SubroutineCall};
 use crate::jack::jack_parser::common::{
     between_round_bracket, between_square_bracket, between_wave_bracket,
 };
@@ -115,6 +114,20 @@ parser! {
         .map(|subroutine_call|DoStatement{
             subroutine_call,
         })
+    }
+}
+
+// TODO 後で消して繋ぎこむ
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct SubroutineCall {}
+
+// TODO 後で消して繋ぎこむ
+parser! {
+    pub(crate) fn subroutine_call[Input]()(Input) -> SubroutineCall
+    where [Input: Stream<Token = Token>]
+    {
+        // TODO 実装する
+        identifier().with(value(SubroutineCall{}))
     }
 }
 
