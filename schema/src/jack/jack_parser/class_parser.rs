@@ -59,7 +59,7 @@ parser! {
 
 #[cfg(test)]
 mod tests {
-    use super::class_variable_parser::ClassVariableDeclerationType;
+    use super::class_variable_parser::ClassVariableType;
     use super::*;
     use crate::jack::jack_parser::tests::easy_parser_assert_token;
     use crate::tokens;
@@ -70,7 +70,7 @@ mod tests {
         where [Input: Stream<Token = Token>]
         {
             identifier().with(value(ClassVariableDecleration{
-                decleration_type: ClassVariableDeclerationType::Static,
+                decleration_type: ClassVariableType::Static,
                 return_type: TypeDecleration::Boolean,
                 var_names: vec![]
             }))
@@ -100,7 +100,7 @@ mod tests {
             Class {
                 class_name: "Main".to_string(),
                 variable_declearations: vec![ClassVariableDecleration {
-                    decleration_type: ClassVariableDeclerationType::Static,
+                    decleration_type: ClassVariableType::Static,
                     return_type: TypeDecleration::Boolean,
                     var_names: vec![],
                 }],

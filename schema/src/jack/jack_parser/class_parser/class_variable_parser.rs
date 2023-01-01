@@ -6,13 +6,13 @@ use super::type_parser::{type_decleration, TypeDecleration};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ClassVariableDecleration {
-    pub decleration_type: ClassVariableDeclerationType,
+    pub decleration_type: ClassVariableType,
     pub return_type: TypeDecleration,
     pub var_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum ClassVariableDeclerationType {
+pub(crate) enum ClassVariableType {
     Static,
     Field,
 }
@@ -36,12 +36,12 @@ parser! {
 }
 
 parser! {
-    fn class_variable_decleration_type[Input]()(Input) -> ClassVariableDeclerationType
+    fn class_variable_decleration_type[Input]()(Input) -> ClassVariableType
     where [Input: Stream<Token = Token>]
     {
         choice((
-            keyword(Keyword::Static).with(value(ClassVariableDeclerationType::Static)),
-            keyword(Keyword::Field).with(value(ClassVariableDeclerationType::Field)),
+            keyword(Keyword::Static).with(value(ClassVariableType::Static)),
+            keyword(Keyword::Field).with(value(ClassVariableType::Field)),
         ))
     }
 }
@@ -65,7 +65,7 @@ mod tests {
                 symbol: SemiColon,
             ),
             ClassVariableDecleration {
-                decleration_type: ClassVariableDeclerationType::Static,
+                decleration_type: ClassVariableType::Static,
                 return_type: TypeDecleration::Int,
                 var_names: vec!["x".to_string(), "y".to_string()],
             },
