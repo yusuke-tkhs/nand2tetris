@@ -36,7 +36,7 @@ pub(crate) enum Term {
     ArrayIdentifier(String, Box<Expression>),
     SubroutineCall(SubroutineCall),
     RoundBraketedExpr(Box<Expression>),
-    UnaryOperatedExpr(UnaryOperator, Box<Expression>),
+    UnaryOperatedExpr(UnaryOperator, Box<Term>),
 }
 
 parser! {
@@ -44,14 +44,15 @@ parser! {
     where [Input: Stream<Token = Token>]
     {
         choice((
-            array_identifier().map(|(ident, expr)|Term::ArrayIdentifier(ident, Box::new(expr))),
+            // 上の３つはidentifierから始まるので、attempt をつけてかつこの順番である必要がある
+            attempt(array_identifier().map(|(ident, expr)|Term::ArrayIdentifier(ident, Box::new(expr)))),
+            attempt(subroutine_call().map(Term::SubroutineCall)),
             identifier().map(Term::Identifier),
             integer_constant().map(Term::IntegerConstant),
             string_constant().map(Term::StringConstant),
             KeywordConstant::parser().map(Term::KeywordConstant),
-            subroutine_call().map(Term::SubroutineCall),
             round_bracketed_expr().map(|expr|Term::RoundBraketedExpr(Box::new(expr))),
-            unary_operated_expr().map(|(op, expr)|Term::UnaryOperatedExpr(op, Box::new(expr))),
+            unary_operated_expr().map(|(op, term)|Term::UnaryOperatedExpr(op, Box::new(term))),
         ))
     }
 }
@@ -74,10 +75,10 @@ parser! {
 }
 
 parser! {
-    pub(crate) fn unary_operated_expr[Input]()(Input) -> (UnaryOperator, Expression)
+    pub(crate) fn unary_operated_expr[Input]()(Input) -> (UnaryOperator, Term)
     where [Input: Stream<Token = Token>]
     {
-        UnaryOperator::parser().and(expression())
+        UnaryOperator::parser().and(term())
     }
 }
 
@@ -99,7 +100,7 @@ symbol_parsable_enum! {
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
     pub enum UnaryOperator {
         Not: Tilde,
-        Negative: Minus,
+        Minus: Minus,
     }
 }
 
@@ -124,7 +125,7 @@ parser! {
     pub(crate) fn subroutine_call[Input]()(Input) -> SubroutineCall
     where [Input: Stream<Token = Token>]
     {
-        optional(identifier().skip(symbol(Symbol::Dot))) // (className | varName)
+        optional(attempt(identifier().skip(symbol(Symbol::Dot)))) // (className | varName)
         .and(identifier()) // subroutineName
         .and(between_round_bracket(sep_by_comma(expression())))
         .map(|((subroutine_holder_name,subroutine_name) ,subroutine_args)|SubroutineCall{
@@ -132,5 +133,136 @@ parser! {
             subroutine_name,
             subroutine_args,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::jack::jack_parser::tests::easy_parser_assert_token;
+    use crate::tokens;
+
+    #[test]
+    fn parse_binary_operator() {
+        // 1 + 2
+        easy_parser_assert_token(
+            expression(),
+            &tokens!(
+                int_const: 1,
+                symbol: Plus,
+                int_const: 2,
+            ),
+            Expression {
+                term: Term::IntegerConstant(1),
+                subsequent_terms: vec![(BinaryOperator::Plus, Term::IntegerConstant(2))],
+            },
+        );
+    }
+
+    #[test]
+    fn parse_unary_operator() {
+        // -1
+        easy_parser_assert_token(
+            expression(),
+            &tokens!(symbol: Tilde, keyword: False,),
+            Expression {
+                term: Term::UnaryOperatedExpr(
+                    UnaryOperator::Not,
+                    Box::new(Term::KeywordConstant(KeywordConstant::False)),
+                ),
+                subsequent_terms: vec![],
+            },
+        );
+    }
+
+    #[test]
+    fn parse_nested_expr() {
+        // 2 * (1 + 3)
+        easy_parser_assert_token(
+            expression(),
+            &tokens!(
+                int_const: 2,
+                symbol: Asterisk,
+                symbol: RoundBracketStart,
+                int_const: 1,
+                symbol: Plus,
+                int_const: 3,
+                symbol: RoundBracketEnd,
+            ),
+            Expression {
+                term: Term::IntegerConstant(2),
+                subsequent_terms: vec![(
+                    BinaryOperator::Multiplication,
+                    Term::RoundBraketedExpr(Box::new(Expression {
+                        term: Term::IntegerConstant(1),
+                        subsequent_terms: vec![(BinaryOperator::Plus, Term::IntegerConstant(3))],
+                    })),
+                )],
+            },
+        );
+    }
+
+    #[test]
+    fn parse_subroutine_call() {
+        // get(c,d)
+        easy_parser_assert_token(
+            expression(),
+            &tokens!(
+                ident: "get",
+                symbol: RoundBracketStart,
+                ident: "c",
+                symbol: Comma,
+                ident: "d",
+                symbol: RoundBracketEnd,
+            ),
+            Expression {
+                term: Term::SubroutineCall(SubroutineCall {
+                    subroutine_holder_name: None,
+                    subroutine_name: "get".to_string(),
+                    subroutine_args: vec![
+                        Expression {
+                            term: Term::Identifier("c".to_string()),
+                            subsequent_terms: vec![],
+                        },
+                        Expression {
+                            term: Term::Identifier("d".to_string()),
+                            subsequent_terms: vec![],
+                        },
+                    ],
+                }),
+                subsequent_terms: vec![],
+            },
+        );
+        // abc.get(c,d)
+        easy_parser_assert_token(
+            expression(),
+            &tokens!(
+                ident: "abc",
+                symbol: Dot,
+                ident: "get",
+                symbol: RoundBracketStart,
+                ident: "c",
+                symbol: Comma,
+                ident: "d",
+                symbol: RoundBracketEnd,
+            ),
+            Expression {
+                term: Term::SubroutineCall(SubroutineCall {
+                    subroutine_holder_name: Some("abc".to_string()),
+                    subroutine_name: "get".to_string(),
+                    subroutine_args: vec![
+                        Expression {
+                            term: Term::Identifier("c".to_string()),
+                            subsequent_terms: vec![],
+                        },
+                        Expression {
+                            term: Term::Identifier("d".to_string()),
+                            subsequent_terms: vec![],
+                        },
+                    ],
+                }),
+                subsequent_terms: vec![],
+            },
+        );
     }
 }
