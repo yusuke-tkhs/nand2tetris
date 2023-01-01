@@ -137,7 +137,7 @@ mod tests {
         easy_parser_assert(Symbol::parser, "}", Symbol::WaveBracketEnd);
         easy_parser_assert(Symbol::parser, "(", Symbol::RoundBracketStart);
         easy_parser_assert(Symbol::parser, ")", Symbol::RoundBracketEnd);
-        easy_parser_assert(Symbol::parser, "[", Symbol::SqareBracketStart);
+        easy_parser_assert(Symbol::parser, "[", Symbol::SquareBracketStart);
         easy_parser_assert(Symbol::parser, "]", Symbol::SquareBracketEnd);
         easy_parser_assert(Symbol::parser, ".", Symbol::Dot);
         easy_parser_assert(Symbol::parser, ",", Symbol::Comma);

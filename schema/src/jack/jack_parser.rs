@@ -1,10 +1,11 @@
 mod class_parser;
+mod common;
 
 use crate::jack::*;
 
 use combine::error::StreamError;
 use combine::stream::StreamErrorFor;
-use combine::{parser, satisfy, EasyParser, Stream};
+use combine::{parser, satisfy, Stream};
 
 parser! {
     fn keyword[Input](keyword: Keyword)(Input) -> ()
@@ -46,20 +47,65 @@ parser! {
     }
 }
 
-pub(crate) fn easily_parse_token<'a, O, F, Fout>(
-    parser_generator: F,
-    input: &'a [Token],
-) -> anyhow::Result<O>
-where
-    F: Fn() -> Fout,
-    Fout: EasyParser<&'a [Token], Output = O>,
-    O: PartialEq + std::fmt::Debug + Clone,
-{
-    let parsed = parser_generator()
-        .easy_parse(input)
-        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
-    Ok(parsed.0)
+parser! {
+    fn integer_constant[Input]()(Input) -> u16
+    where [Input: Stream<Token = Token>]
+    {
+        satisfy(|t|matches!(t, Token::IntegerConstant(_)))
+            .and_then(|t|match t{
+                Token::IntegerConstant(v) => Ok(v),
+                _ => Err(StreamErrorFor::<Input>::message( "failed to parse integer constant!"))
+            })
+    }
 }
+
+#[macro_export]
+macro_rules! keyword_parsable_enum{
+    (
+        $(#[$attr:meta])*
+        $enum_vis: vis enum $enum_name: ident {
+            $(
+                $case_name: ident
+            ),+$(,)?
+        }
+    ) => {
+        $(#[$attr])*
+        $enum_vis enum $enum_name {
+            $($case_name),+
+        }
+        impl $enum_name {
+            $enum_vis fn parser<Input>() -> impl combine::Parser<Input, Output = Self>
+            where Input: Stream<Token = Token>
+            {
+                parser! {
+                    fn inner_fn[Input]()(Input) -> $enum_name
+                    where [Input: Stream<Token = Token>]
+                    {
+                        choice([
+                            $(keyword(Keyword::$case_name).with(value($enum_name::$case_name))),+
+                        ])
+                    }
+                }
+                inner_fn()
+            }
+        }
+    }
+}
+
+// pub(crate) fn easily_parse_token<'a, O, F, Fout>(
+//     parser_generator: F,
+//     input: &'a [Token],
+// ) -> anyhow::Result<O>
+// where
+//     F: Fn() -> Fout,
+//     Fout: EasyParser<&'a [Token], Output = O>,
+//     O: PartialEq + std::fmt::Debug + Clone,
+// {
+//     let parsed = parser_generator()
+//         .easy_parse(input)
+//         .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+//     Ok(parsed.0)
+// }
 
 #[cfg(test)]
 mod tests {

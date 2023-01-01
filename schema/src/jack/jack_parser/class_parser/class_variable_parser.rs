@@ -1,6 +1,6 @@
-use crate::jack::jack_parser::*;
+use crate::jack::jack_parser::{common::sep_by_comma_1, *};
+use crate::keyword_parsable_enum;
 use combine::parser::choice::choice;
-use combine::parser::repeat::sep_by1;
 
 use super::type_parser::{type_decleration, TypeDecleration};
 
@@ -11,19 +11,21 @@ pub(crate) struct ClassVariableDecleration {
     pub var_names: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum ClassVariableType {
-    Static,
-    Field,
+keyword_parsable_enum! {
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    pub(crate) enum ClassVariableType {
+        Static,
+        Field,
+    }
 }
 
 parser! {
     pub(crate) fn class_variable_decleration[Input]()(Input) -> ClassVariableDecleration
     where [Input: Stream<Token = Token>]
     {
-        class_variable_decleration_type()
+        ClassVariableType::parser()
             .and(type_decleration())
-            .and(sep_by1(identifier(), symbol(Symbol::Comma)))
+            .and(sep_by_comma_1(identifier()))
             .skip(symbol(Symbol::SemiColon))
             .map(|((decleration_type, return_type), var_names)|{
                 ClassVariableDecleration{
@@ -32,17 +34,6 @@ parser! {
                     var_names,
                 }
             })
-    }
-}
-
-parser! {
-    fn class_variable_decleration_type[Input]()(Input) -> ClassVariableType
-    where [Input: Stream<Token = Token>]
-    {
-        choice((
-            keyword(Keyword::Static).with(value(ClassVariableType::Static)),
-            keyword(Keyword::Field).with(value(ClassVariableType::Field)),
-        ))
     }
 }
 

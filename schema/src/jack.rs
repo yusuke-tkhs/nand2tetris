@@ -64,7 +64,7 @@ parsable_enum! {
         WaveBracketEnd: "}",
         RoundBracketStart: "(",
         RoundBracketEnd: ")",
-        SqareBracketStart: "[",
+        SquareBracketStart: "[",
         SquareBracketEnd: "]",
         Dot: ".",
         Comma: ",",

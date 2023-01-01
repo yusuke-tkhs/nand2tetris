@@ -4,10 +4,12 @@ mod type_parser;
 
 use crate::jack::jack_parser::*;
 use combine::parser::repeat::many;
-use combine::{between, parser, Parser, Stream};
+use combine::{parser, Parser, Stream};
 
 use class_variable_parser::{class_variable_decleration, ClassVariableDecleration};
 use subroutine_parser::{class_subroutine_decleration, ClassSubroutineDecleration};
+
+use super::common::between_wave_bracket;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Class {
@@ -40,13 +42,7 @@ parser! {
     {
         keyword(Keyword::Class)
             .with(identifier())
-            .and(
-                between(
-                    symbol(Symbol::WaveBracketStart),
-                    symbol(Symbol::WaveBracketEnd),
-                    many(class_variable_parser).and(many(subroutine_parser))
-                )
-            )
+            .and(between_wave_bracket(many(class_variable_parser).and(many(subroutine_parser))))
             .map(|(class_name, (variable_declearations, subroutine_declerations))|{
                 Class{
                     class_name,
@@ -60,6 +56,9 @@ parser! {
 #[cfg(test)]
 mod tests {
     use super::class_variable_parser::ClassVariableType;
+    use super::subroutine_parser::{
+        ClassSubroutineReturnType, ClassSubroutineType, SubroutineBody,
+    };
     use super::*;
     use crate::jack::jack_parser::tests::easy_parser_assert_token;
     use crate::tokens;
@@ -81,7 +80,16 @@ mod tests {
         fn mock_subroutine_parser[Input]()(Input) -> ClassSubroutineDecleration
         where [Input: Stream<Token = Token>]
         {
-            string_constant().with(value(ClassSubroutineDecleration{}))
+            string_constant().with(value(ClassSubroutineDecleration{
+                name: Default::default(),
+                decleration_type: ClassSubroutineType::Constructor,
+                return_type: ClassSubroutineReturnType::Void,
+                parameters: vec![],
+                body: SubroutineBody{
+                    variable_declerations:  vec![],
+                    statements: vec![]
+                },
+            }))
         }
     }
 
@@ -104,7 +112,16 @@ mod tests {
                     return_type: TypeDecleration::Boolean,
                     var_names: vec![],
                 }],
-                subroutine_declerations: vec![ClassSubroutineDecleration {}],
+                subroutine_declerations: vec![ClassSubroutineDecleration {
+                    name: Default::default(),
+                    decleration_type: ClassSubroutineType::Constructor,
+                    return_type: ClassSubroutineReturnType::Void,
+                    parameters: vec![],
+                    body: SubroutineBody {
+                        variable_declerations: vec![],
+                        statements: vec![],
+                    },
+                }],
             },
         )
     }
