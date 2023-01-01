@@ -26,7 +26,7 @@ parser! {
         ClassVariableType::parser()
             .and(type_decleration())
             .and(sep_by_comma_1(identifier()))
-            .skip(symbol(Symbol::SemiColon))
+            .skip_semicolon()
             .map(|((decleration_type, return_type), var_names)|{
                 ClassVariableDecleration{
                     decleration_type,
@@ -47,7 +47,7 @@ mod tests {
     fn parse_class_variable_decleration_type() {
         easy_parser_assert_token(
             class_variable_decleration(),
-            tokens!(
+            &tokens!(
                 keyword: Static,
                 keyword: Int,
                 ident: "x",

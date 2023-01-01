@@ -97,7 +97,7 @@ mod tests {
     fn parse_class() {
         easy_parser_assert_token(
             class_impl(mock_class_var_parser(), mock_subroutine_parser()),
-            tokens!(
+            &tokens!(
                 keyword: Class,
                 ident: "Main",
                 symbol: WaveBracketStart,

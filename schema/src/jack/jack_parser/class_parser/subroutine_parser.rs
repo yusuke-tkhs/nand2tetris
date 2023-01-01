@@ -117,7 +117,7 @@ parser! {
         .and(
             sep_by_comma_1(identifier())
         )
-        .skip(symbol(Symbol::SemiColon))
+        .skip_semicolon()
         .map(|(variable_type, names)|SubroutineVariableDecleration{
             variable_type,
             names,
@@ -147,7 +147,7 @@ mod tests {
     fn parse_class_variable_decleration_type() {
         easy_parser_assert_token(
             class_subroutine_decleration(),
-            tokens!(
+            &tokens!(
                 keyword: Constructor,
                 ident: "Square",
                 ident: "new",

@@ -19,7 +19,6 @@ parser! {
     pub(crate) fn statement[Input]()(Input) -> Statement
     where [Input: Stream<Token = Token>]
     {
-        // TODO 実装する
         choice((
             let_statement().map(Statement::Let),
             if_statement().map(Statement::If),
@@ -46,7 +45,7 @@ parser! {
         .and(optional(between_square_bracket(expression_mock())))
         .skip(symbol(Symbol::Equal))
         .and(expression_mock())
-        .skip(symbol(Symbol::SemiColon))
+        .skip_semicolon()
         .map(|((target_name,target_index),source)|LetStatement{
             source,
             target_name,
@@ -112,6 +111,7 @@ parser! {
     {
         keyword(Keyword::Do)
         .with(subroutine_call())
+        .skip_semicolon()
         .map(|subroutine_call|DoStatement{
             subroutine_call,
         })
@@ -147,5 +147,215 @@ parser! {
         // TODO 実装する
         identifier()
         .with(value(Expression{}))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::jack::jack_parser::tests::easy_parser_assert_token;
+    use crate::tokens;
+
+    macro_rules! make_sample_let_statement(
+        ($name: literal) => {
+            tokens!(
+                keyword: Let,
+                ident: $name,
+                symbol: SquareBracketStart,
+                ident: "expression_mock",
+                symbol: SquareBracketEnd,
+                symbol: Equal,
+                ident: "expression_mock",
+                symbol: SemiColon,
+            )
+        }
+    );
+
+    #[test]
+    fn parse_let_statement() {
+        easy_parser_assert_token(
+            let_statement(),
+            &make_sample_let_statement!("a"),
+            LetStatement {
+                source: Expression {},
+                target_name: "a".to_string(),
+                target_index: None,
+            },
+        );
+        // index ありの場合
+        easy_parser_assert_token(
+            let_statement(),
+            &tokens!(
+                keyword: Let,
+                ident: "a",
+                symbol: SquareBracketStart,
+                ident: "expression_mock",
+                symbol: SquareBracketEnd,
+                symbol: Equal,
+                ident: "expression_mock",
+                symbol: SemiColon,
+            ),
+            LetStatement {
+                source: Expression {},
+                target_name: "a".to_string(),
+                target_index: Some(Expression {}),
+            },
+        )
+    }
+
+    #[test]
+    fn parse_if_statement() {
+        /*
+            if (expr) {
+                let a = expr;
+            }
+        */
+        easy_parser_assert_token(
+            if_statement(),
+            &vec![
+                tokens!(
+                    keyword: If,
+                    symbol: RoundBracketStart,
+                    ident: "expression_mock",
+                    symbol: RoundBracketEnd,
+                    symbol: WaveBracketStart,
+                ),
+                make_sample_let_statement!("a"),
+                tokens!(symbol: WaveBracketEnd,),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>(),
+            IfStatement {
+                condition: Expression {},
+                if_statements: vec![Statement::Let(LetStatement {
+                    source: Expression {},
+                    target_name: "a".to_string(),
+                    target_index: Some(Expression {}),
+                })],
+                else_statements: vec![],
+            },
+        );
+        /*
+            if (expr) {
+                let a = expr;
+            } else {
+                let b = expr;
+            }
+        */
+        easy_parser_assert_token(
+            if_statement(),
+            &vec![
+                tokens!(
+                    keyword: If,
+                    symbol: RoundBracketStart,
+                    ident: "expression_mock",
+                    symbol: RoundBracketEnd,
+                    symbol: WaveBracketStart,
+                ),
+                make_sample_let_statement!("a"),
+                tokens!(
+                    symbol: WaveBracketEnd,
+                    keyword: Else,
+                    symbol: WaveBracketStart,
+                ),
+                make_sample_let_statement!("b"),
+                tokens!(symbol: WaveBracketEnd,),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>(),
+            IfStatement {
+                condition: Expression {},
+                if_statements: vec![Statement::Let(LetStatement {
+                    source: Expression {},
+                    target_name: "a".to_string(),
+                    target_index: Some(Expression {}),
+                })],
+                else_statements: vec![Statement::Let(LetStatement {
+                    source: Expression {},
+                    target_name: "b".to_string(),
+                    target_index: Some(Expression {}),
+                })],
+            },
+        );
+    }
+
+    #[test]
+    fn parse_while_statement() {
+        /*
+            while (expr) {
+                let a = expr;
+            }
+        */
+        easy_parser_assert_token(
+            while_statement(),
+            &vec![
+                tokens!(
+                    keyword: While,
+                    symbol: RoundBracketStart,
+                    ident: "expression_mock",
+                    symbol: RoundBracketEnd,
+                    symbol: WaveBracketStart,
+                ),
+                make_sample_let_statement!("a"),
+                tokens!(symbol: WaveBracketEnd,),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>(),
+            WhileStatement {
+                condition: Expression {},
+                statements: vec![Statement::Let(LetStatement {
+                    source: Expression {},
+                    target_name: "a".to_string(),
+                    target_index: Some(Expression {}),
+                })],
+            },
+        );
+    }
+
+    #[test]
+    fn parse_do_statement() {
+        /*
+            do subroutineCall;
+        */
+        easy_parser_assert_token(
+            do_statement(),
+            &tokens!(
+                keyword: Do,
+                ident: "subroutine_call_mock",
+                symbol: SemiColon,
+            ),
+            DoStatement {
+                subroutine_call: SubroutineCall {},
+            },
+        );
+    }
+
+    #[test]
+    fn parse_return_statement() {
+        /*
+            return expression;
+        */
+        easy_parser_assert_token(
+            return_statement(),
+            &tokens!(
+                keyword: Return,
+                ident: "expression_mock",
+                symbol: SemiColon,
+            ),
+            ReturnStatement {
+                expression: Some(Expression {}),
+            },
+        );
+        /*
+            return;
+        */
+        easy_parser_assert_token(
+            return_statement(),
+            &tokens!(keyword: Return, symbol: SemiColon,),
+            ReturnStatement { expression: None },
+        );
     }
 }

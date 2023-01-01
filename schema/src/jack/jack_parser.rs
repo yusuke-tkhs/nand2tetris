@@ -7,6 +7,25 @@ use combine::error::StreamError;
 use combine::stream::StreamErrorFor;
 use combine::{parser, satisfy, Stream};
 
+trait SkipSemicolon<Input>: combine::Parser<Input>
+where
+    Input: combine::Stream<Token = Token>,
+{
+    fn skip_semicolon(self) -> combine::parser::sequence::Skip<Self, jack_parser::symbol<Input>>
+    where
+        Self: std::marker::Sized,
+    {
+        self.skip(symbol(Symbol::SemiColon))
+    }
+}
+
+impl<Input, Parser> SkipSemicolon<Input> for Parser
+where
+    Parser: combine::Parser<Input>,
+    Input: combine::Stream<Token = Token>,
+{
+}
+
 parser! {
     fn keyword[Input](keyword: Keyword)(Input) -> ()
     where [Input: Stream<Token = Token>]
@@ -132,7 +151,7 @@ mod tests {
             $(str_const: $str_const: literal)?
             $(int_const: $int_const: literal)?
         ,)+) => {
-            &[
+            vec![
                 $(
                     $(Token::Keyword(Keyword::$keyword))?
                     $(Token::Symbol(Symbol::$symbol))?
@@ -146,19 +165,19 @@ mod tests {
 
     #[test]
     fn parse_keyword() {
-        easy_parser_assert_token(keyword(Keyword::Class), tokens!(keyword: Class,), ())
+        easy_parser_assert_token(keyword(Keyword::Class), &tokens!(keyword: Class,), ())
     }
 
     #[test]
     fn parse_symbol() {
-        easy_parser_assert_token(symbol(Symbol::Comma), tokens!(symbol: Comma,), ())
+        easy_parser_assert_token(symbol(Symbol::Comma), &tokens!(symbol: Comma,), ())
     }
 
     #[test]
     fn parse_string_constant() {
         easy_parser_assert_token(
             string_constant(),
-            tokens!(str_const: "string_constant",),
+            &tokens!(str_const: "string_constant",),
             "string_constant".to_string(),
         )
     }
@@ -167,7 +186,7 @@ mod tests {
     fn parse_identifier() {
         easy_parser_assert_token(
             identifier(),
-            tokens!(ident: "identifier",),
+            &tokens!(ident: "identifier",),
             "identifier".to_string(),
         )
     }
