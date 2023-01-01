@@ -172,6 +172,41 @@ mod tests {
     );
 
     #[test]
+    fn parse_statement_recursive() {
+        /*
+            if (expr) {
+                let a = expr;
+            }
+        */
+        easy_parser_assert_token(
+            statement(),
+            &vec![
+                tokens!(
+                    keyword: If,
+                    symbol: RoundBracketStart,
+                    ident: "expression_mock",
+                    symbol: RoundBracketEnd,
+                    symbol: WaveBracketStart,
+                ),
+                make_sample_let_statement!("a"),
+                tokens!(symbol: WaveBracketEnd,),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>(),
+            Statement::If(IfStatement {
+                condition: Expression {},
+                if_statements: vec![Statement::Let(LetStatement {
+                    source: Expression {},
+                    target_name: "a".to_string(),
+                    target_index: Some(Expression {}),
+                })],
+                else_statements: vec![],
+            }),
+        );
+    }
+
+    #[test]
     fn parse_let_statement() {
         easy_parser_assert_token(
             let_statement(),
