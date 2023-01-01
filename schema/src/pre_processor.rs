@@ -1,4 +1,4 @@
-/// 与えられたアセンブリファイルの構文解析に先立って前処理を行うための共通関数群
+/// 構文解析に先立って前処理を行うための共通関数群
 
 pub(crate) fn split_by_newline(line: String) -> impl Iterator<Item = String> {
     line.split('\n')
