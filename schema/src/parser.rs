@@ -40,7 +40,7 @@ macro_rules! parsable_enum{
                 }
                 inner_fn()
             }
-            $enum_vis fn to_str(&self) -> &str {
+            $enum_vis fn as_str(&self) -> &str {
                 match self {
                     $(Self::$case_name => $case_string),+
                 }
@@ -66,8 +66,8 @@ fn test_parsable_enum() {
     };
     easy_parser_assert(Test::parser, "a", Test::A);
     easy_parser_assert(Test::parser, "b_dayo!#$%", Test::B);
-    assert_eq!(Test::A.to_str(), "a");
-    assert_eq!(Test::B.to_str(), "b_dayo!#$%");
+    assert_eq!(Test::A.as_str(), "a");
+    assert_eq!(Test::B.as_str(), "b_dayo!#$%");
 }
 
 parser! {

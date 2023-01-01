@@ -139,7 +139,6 @@ mod tests {
     use super::*;
     use crate::jack::jack_parser::tests::easy_parser_assert_token;
     use crate::tokens;
-    use combine::parser::token::value;
 
     #[test]
     fn parse_class_variable_decleration_type() {

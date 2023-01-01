@@ -110,6 +110,7 @@ macro_rules! keyword_parsable_enum{
 #[cfg(test)]
 mod tests {
     use super::*;
+    use combine::EasyParser;
 
     pub(crate) fn easy_parser_assert_token<'a, O, P>(mut parser: P, input: &'a [Token], expected: O)
     where
