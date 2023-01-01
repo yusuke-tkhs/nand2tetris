@@ -24,7 +24,7 @@ parser! {
 }
 
 parser! {
-    pub(crate) fn square_wave_bracket[Input, Output, Parser](parser: Parser)(Input) -> Output
+    pub(crate) fn between_square_bracket[Input, Output, Parser](parser: Parser)(Input) -> Output
     where [
         Input: Stream<Token = Token>,
         Parser: combine::Parser<Input, Output = Output>

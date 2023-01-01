@@ -1,3 +1,6 @@
+mod statement;
+mod subroutine_call;
+
 use super::type_parser::{type_decleration, TypeDecleration};
 use crate::jack::jack_parser::common::{
     between_round_bracket, between_wave_bracket, sep_by_comma, sep_by_comma_1,
