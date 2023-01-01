@@ -19,6 +19,15 @@ pub enum Token {
     Identifier(String),
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Token2 {
+    Keyword(Keyword),
+    Symbol(Symbol),
+    IntegerConstant(u16),
+    StringConstant(&'static str),
+    Identifier(&'static str),
+}
+
 //impl std::fmt::Display for Token {}
 
 parsable_enum! {
