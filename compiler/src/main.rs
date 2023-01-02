@@ -1,24 +1,10 @@
 mod xml;
 
-use schema::jack::tokenizer::{tokenize, Token};
+use schema::jack::{
+    token_analyzer::parse_tokens_as_class,
+    tokenizer::{tokenize, Token},
+};
 use std::path::{Path, PathBuf};
-
-fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<Token>> {
-    dbg!(&input_path.as_ref());
-    let input = std::fs::read_to_string(input_path.as_ref()).unwrap();
-    tokenize(input)
-}
-
-// jack言語から生成されたxml言語を出力するパス
-fn output_xml_path(path: impl AsRef<Path>, prefix: &str) -> Option<PathBuf> {
-    let stem = path.as_ref().file_stem()?.to_str()?;
-    let parent = path.as_ref().parent()?;
-    Some(parent.join(format!("{stem}{prefix}.xml")))
-}
-
-fn output_tokens_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
-    output_xml_path(path, "T_by_compiler")
-}
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -39,22 +25,50 @@ fn main() {
         }
 
         input_files.into_iter().for_each(|path| {
-            let tokens = construct_tokens(&path).unwrap();
-            let xml = xml::tokens_to_xml(tokens);
-            std::fs::write(output_tokens_xml_path(&path).unwrap(), xml).unwrap();
+            generate_files(path).unwrap();
         });
     } else if input_arg_path.is_file() {
         if input_arg_path.extension().unwrap() != std::ffi::OsStr::new("jack") {
             panic!("input file has to be .jack file");
         }
-        let tokens = construct_tokens(input_arg_path).unwrap();
-
-        std::fs::write(
-            output_tokens_xml_path(input_arg_path).unwrap(),
-            xml::tokens_to_xml(tokens),
-        )
-        .unwrap();
+        generate_files(input_arg_path).unwrap();
     } else {
         panic!("First argument has to be file path or directory path.")
     };
+}
+
+fn generate_files(path: impl AsRef<Path>) -> anyhow::Result<()> {
+    let tokens = construct_tokens(&path)?;
+    let tokens_xml = xml::tokens_to_xml(&tokens);
+    std::fs::write(output_tokens_xml_path(&path).unwrap(), tokens_xml)?;
+
+    let class = parse_tokens_as_class(&tokens)?;
+    dbg!(&class);
+    let class_xml = xml::class_to_xml(&class);
+    std::fs::write(output_jack_token_xml_path(&path).unwrap(), class_xml)?;
+
+    Ok(())
+}
+
+fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<Token>> {
+    dbg!(&input_path.as_ref());
+    let input = std::fs::read_to_string(input_path.as_ref())?;
+    tokenize(input)
+}
+
+// jack言語から生成されたxml言語を出力するパス
+fn output_xml_path(path: impl AsRef<Path>, suffix: &str) -> Option<PathBuf> {
+    let stem = path.as_ref().file_stem()?.to_str()?;
+    let parent = path.as_ref().parent()?;
+    Some(parent.join(format!("{stem}{suffix}.xml")))
+}
+
+// 字句解析結果の出力先
+fn output_tokens_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
+    output_xml_path(path, "T_by_compiler")
+}
+
+// 構文解析結果の出力先
+fn output_jack_token_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
+    output_xml_path(path, "_by_compiler")
 }
