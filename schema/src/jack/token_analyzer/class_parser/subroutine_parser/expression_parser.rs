@@ -1,14 +1,20 @@
-use crate::jack::jack_parser::common::{
-    between_round_bracket, between_square_bracket, sep_by_comma,
+use crate::jack::token_analyzer::{
+    custom_combinators::{
+        between::{between_round_bracket, between_square_bracket},
+        sep_by::sep_by_comma,
+    },
+    custom_parser::{identifier, integer_constant, keyword, string_constant, symbol},
+    parsable_macro::{keyword_parsable_enum, symbol_parsable_enum},
 };
-use crate::jack::jack_parser::*;
-use crate::{keyword_parsable_enum, symbol_parsable_enum};
-use combine::{many, optional};
+
+use crate::jack::tokenizer::{Keyword, Symbol, Token};
+
+use combine::{attempt, choice, many, optional, parser, value, Stream};
 
 /// 式は、１つ以上の「項」から構成される。
 /// ２つ以上の「項」を含む場合、それらは二項演算子で接続される。
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Expression {
+pub struct Expression {
     pub term: Term,
     pub subsequent_terms: Vec<(BinaryOperator, Term)>,
 }
@@ -28,7 +34,7 @@ parser! {
 
 /// 式を構成する「項」。
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum Term {
+pub enum Term {
     IntegerConstant(u16),
     StringConstant(String),
     KeywordConstant(KeywordConstant),
@@ -115,7 +121,7 @@ keyword_parsable_enum! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct SubroutineCall {
+pub struct SubroutineCall {
     pub subroutine_holder_name: Option<String>, // (className | varName).subroutine(args) のときSome
     pub subroutine_name: String,
     pub subroutine_args: Vec<Expression>,
@@ -139,8 +145,7 @@ parser! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jack::jack_parser::tests::easy_parser_assert_token;
-    use crate::tokens;
+    use crate::jack::token_analyzer::tests::{easy_parser_assert_token, tokens};
 
     #[test]
     fn parse_binary_operator() {

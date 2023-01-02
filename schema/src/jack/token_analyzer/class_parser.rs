@@ -1,25 +1,34 @@
-mod class_variable_parser;
-mod subroutine_parser;
-mod type_parser;
+pub(crate) mod class_variable_parser;
+pub(crate) mod subroutine_parser;
+pub(crate) mod type_parser;
 
-use crate::jack::jack_parser::*;
-use combine::parser::repeat::many;
-use combine::{parser, Parser, Stream};
+use combine::{parser, parser::repeat::many, Parser, Stream};
 
+use crate::jack::token_analyzer::{
+    custom_combinators::between::between_wave_bracket,
+    custom_parser::{identifier, keyword},
+};
+use crate::jack::tokenizer::{Keyword, Token};
 use class_variable_parser::{class_variable_decleration, ClassVariableDecleration};
 use subroutine_parser::{class_subroutine_decleration, ClassSubroutineDecleration};
 
-use super::common::between_wave_bracket;
+pub fn parse_tokens_as_class(input: &[Token]) -> anyhow::Result<Class> {
+    use combine::EasyParser;
+    let parsed = class()
+        .easy_parse(input)
+        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+    Ok(parsed.0)
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Class {
-    class_name: String,
-    variable_declearations: Vec<ClassVariableDecleration>,
-    subroutine_declerations: Vec<ClassSubroutineDecleration>,
+pub struct Class {
+    pub class_name: String,
+    pub variable_declearations: Vec<ClassVariableDecleration>,
+    pub subroutine_declerations: Vec<ClassSubroutineDecleration>,
 }
 
 parser! {
-    fn class[Input]()(Input) -> Class
+    pub(super) fn class[Input]()(Input) -> Class
     where [Input: Stream<Token = Token>]
     {
         class_impl(
@@ -60,8 +69,12 @@ mod tests {
         ClassSubroutineReturnType, ClassSubroutineType, SubroutineBody,
     };
     use super::*;
-    use crate::jack::jack_parser::tests::easy_parser_assert_token;
-    use crate::tokens;
+    use crate::jack::token_analyzer::{
+        custom_parser::string_constant,
+        tests::{easy_parser_assert_token, tokens},
+    };
+    use crate::jack::tokenizer::Symbol;
+    use combine::value;
     use type_parser::TypeDecleration;
 
     parser! {

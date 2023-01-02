@@ -1,8 +1,10 @@
-use crate::jack::jack_parser::*;
+use crate::jack::token_analyzer::custom_parser::{identifier, keyword};
+use crate::jack::tokenizer::{Keyword, Token};
 use combine::parser::choice::choice;
+use combine::{parser, value, Stream};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum TypeDecleration {
+pub enum TypeDecleration {
     Int,
     Char,
     Boolean,

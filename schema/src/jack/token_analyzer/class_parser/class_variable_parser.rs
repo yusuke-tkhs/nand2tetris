@@ -1,11 +1,17 @@
-use crate::jack::jack_parser::{common::sep_by_comma_1, *};
-use crate::keyword_parsable_enum;
-use combine::parser::choice::choice;
+use crate::jack::token_analyzer::{
+    combine_extension::SkipSemicolon,
+    custom_combinators::sep_by::sep_by_comma_1,
+    custom_parser::{identifier, keyword},
+    parsable_macro::keyword_parsable_enum,
+};
+use crate::jack::tokenizer::{Keyword, Token};
 
 use super::type_parser::{type_decleration, TypeDecleration};
 
+use combine::{choice, parser, value, Stream};
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct ClassVariableDecleration {
+pub struct ClassVariableDecleration {
     pub decleration_type: ClassVariableType,
     pub return_type: TypeDecleration,
     pub var_names: Vec<String>,
@@ -13,7 +19,7 @@ pub(crate) struct ClassVariableDecleration {
 
 keyword_parsable_enum! {
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    pub(crate) enum ClassVariableType {
+    pub enum ClassVariableType {
         Static,
         Field,
     }
@@ -40,8 +46,8 @@ parser! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jack::jack_parser::tests::easy_parser_assert_token;
-    use crate::tokens;
+    use crate::jack::token_analyzer::tests::{easy_parser_assert_token, tokens};
+    use crate::jack::tokenizer::{Keyword, Symbol};
 
     #[test]
     fn parse_class_variable_decleration_type() {

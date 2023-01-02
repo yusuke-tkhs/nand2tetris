@@ -1,18 +1,24 @@
-mod expression_parser;
-mod statement_parser;
+pub(crate) mod expression_parser;
+pub(crate) mod statement_parser;
 
 use super::type_parser::{type_decleration, TypeDecleration};
-use crate::jack::jack_parser::common::{
-    between_round_bracket, between_wave_bracket, sep_by_comma, sep_by_comma_1,
-};
-use crate::jack::jack_parser::*;
-use combine::many;
 use statement_parser::{statement, Statement};
 
-use crate::keyword_parsable_enum;
+use crate::jack::token_analyzer::{
+    combine_extension::SkipSemicolon,
+    custom_combinators::{
+        between::{between_round_bracket, between_wave_bracket},
+        sep_by::{sep_by_comma, sep_by_comma_1},
+    },
+    custom_parser::{identifier, keyword},
+    parsable_macro::keyword_parsable_enum,
+};
+use crate::jack::tokenizer::{Keyword, Token};
+
+use combine::{choice, many, parser, value, Stream};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct ClassSubroutineDecleration {
+pub struct ClassSubroutineDecleration {
     pub name: String,
     pub decleration_type: ClassSubroutineType,
     pub return_type: ClassSubroutineReturnType,
@@ -42,7 +48,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum ClassSubroutineReturnType {
+pub enum ClassSubroutineReturnType {
     Void,
     Type(TypeDecleration),
 }
@@ -60,7 +66,7 @@ parser! {
 
 keyword_parsable_enum! {
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    pub(crate) enum ClassSubroutineType {
+    pub enum ClassSubroutineType {
         Constructor,
         Function,
         Method,
@@ -68,7 +74,7 @@ keyword_parsable_enum! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct ClassSubroutineParameter {
+pub struct ClassSubroutineParameter {
     pub name: String,
     pub parameter_type: TypeDecleration,
 }
@@ -85,7 +91,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct SubroutineBody {
+pub struct SubroutineBody {
     pub variable_declerations: Vec<SubroutineVariableDecleration>,
     pub statements: Vec<Statement>,
 }
@@ -104,7 +110,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct SubroutineVariableDecleration {
+pub struct SubroutineVariableDecleration {
     variable_type: TypeDecleration,
     names: Vec<String>,
 }
@@ -130,8 +136,8 @@ parser! {
 mod tests {
     use super::statement_parser::ReturnStatement;
     use super::*;
-    use crate::jack::jack_parser::tests::easy_parser_assert_token;
-    use crate::tokens;
+    use crate::jack::token_analyzer::tests::{easy_parser_assert_token, tokens};
+    use crate::jack::tokenizer::{Keyword, Symbol};
 
     #[test]
     fn parse_class_variable_decleration_type() {

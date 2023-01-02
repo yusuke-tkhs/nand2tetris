@@ -11,7 +11,6 @@ use combine::EasyParser;
 use combine::Stream;
 use combine::{many, many1};
 
-#[macro_export]
 macro_rules! parsable_enum{
     (
         $(#[$attr:meta])*
@@ -48,6 +47,7 @@ macro_rules! parsable_enum{
         }
     }
 }
+pub(crate) use parsable_enum;
 
 #[test]
 fn test_parsable_enum() {

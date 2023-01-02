@@ -1,13 +1,17 @@
 use super::expression_parser::{expression, subroutine_call, Expression, SubroutineCall};
-use crate::jack::jack_parser::common::{
-    between_round_bracket, between_square_bracket, between_wave_bracket,
+use crate::jack::token_analyzer::{
+    combine_extension::SkipSemicolon,
+    custom_combinators::between::{
+        between_round_bracket, between_square_bracket, between_wave_bracket,
+    },
+    custom_parser::{identifier, keyword, symbol},
 };
-use crate::jack::jack_parser::*;
-use combine::{many, optional};
+use crate::jack::tokenizer::{Keyword, Symbol, Token};
+use combine::{choice, many, optional, parser, Stream};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 
-pub(crate) enum Statement {
+pub enum Statement {
     Let(LetStatement),
     If(IfStatement),
     While(WhileStatement),
@@ -30,7 +34,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct LetStatement {
+pub struct LetStatement {
     pub source: Expression,
     pub target_name: String,
     pub target_index: Option<Expression>,
@@ -55,7 +59,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct IfStatement {
+pub struct IfStatement {
     pub condition: Expression,
     pub if_statements: Vec<Statement>,
     pub else_statements: Vec<Statement>, // else 句が無い場合は空
@@ -81,7 +85,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct WhileStatement {
+pub struct WhileStatement {
     pub condition: Expression,
     pub statements: Vec<Statement>,
 }
@@ -101,7 +105,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct DoStatement {
+pub struct DoStatement {
     pub subroutine_call: SubroutineCall,
 }
 
@@ -119,7 +123,7 @@ parser! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct ReturnStatement {
+pub struct ReturnStatement {
     pub expression: Option<Expression>,
 }
 
@@ -141,8 +145,7 @@ mod tests {
     use super::*;
 
     use super::super::expression_parser::{KeywordConstant, Term};
-    use crate::jack::jack_parser::tests::easy_parser_assert_token;
-    use crate::tokens;
+    use crate::jack::token_analyzer::tests::{easy_parser_assert_token, tokens};
 
     // true
     fn expr_true() -> Expression {

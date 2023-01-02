@@ -1,12 +1,12 @@
 mod xml;
 
-use schema::jack;
+use schema::jack::tokenizer::{tokenize, Token};
 use std::path::{Path, PathBuf};
 
-fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<jack::Token>> {
+fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<Token>> {
     dbg!(&input_path.as_ref());
     let input = std::fs::read_to_string(input_path.as_ref()).unwrap();
-    jack::tokenize(input)
+    tokenize(input)
 }
 
 // jack言語から生成されたxml言語を出力するパス
