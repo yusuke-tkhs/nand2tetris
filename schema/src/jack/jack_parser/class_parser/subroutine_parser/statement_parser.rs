@@ -1,3 +1,4 @@
+use super::expression_parser::{expression, subroutine_call, Expression, SubroutineCall};
 use crate::jack::jack_parser::common::{
     between_round_bracket, between_square_bracket, between_wave_bracket,
 };
@@ -41,9 +42,9 @@ parser! {
     {
         keyword(Keyword::Let)
         .with(identifier()) // varName
-        .and(optional(between_square_bracket(expression_mock())))
+        .and(optional(between_square_bracket(expression())))
         .skip(symbol(Symbol::Equal))
-        .and(expression_mock())
+        .and(expression())
         .skip_semicolon()
         .map(|((target_name,target_index),source)|LetStatement{
             source,
@@ -65,7 +66,7 @@ parser! {
     where [Input: Stream<Token = Token>]
     {
         keyword(Keyword::If)
-        .with(between_round_bracket(expression_mock()))
+        .with(between_round_bracket(expression()))
         .and(between_wave_bracket(many(statement())))
         .and(optional(
             keyword(Keyword::Else)
@@ -90,7 +91,7 @@ parser! {
     where [Input: Stream<Token = Token>]
     {
         keyword(Keyword::While)
-        .with(between_round_bracket(expression_mock()))
+        .with(between_round_bracket(expression()))
         .and(between_wave_bracket(many(statement())))
         .map(|(condition, statements)|WhileStatement{
             condition,
@@ -117,23 +118,9 @@ parser! {
     }
 }
 
-// TODO 後で消して繋ぎこむ
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct SubroutineCall {}
-
-// TODO 後で消して繋ぎこむ
-parser! {
-    pub(crate) fn subroutine_call[Input]()(Input) -> SubroutineCall
-    where [Input: Stream<Token = Token>]
-    {
-        // TODO 実装する
-        identifier().with(value(SubroutineCall{}))
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ReturnStatement {
-    expression: Option<Expression>,
+    pub expression: Option<Expression>,
 }
 
 parser! {
@@ -141,48 +128,56 @@ parser! {
     where [Input: Stream<Token = Token>]
     {
         keyword(Keyword::Return)
-        .with(optional(expression_mock()))
+        .with(optional(expression()))
+        .skip_semicolon()
         .map(|expression|ReturnStatement{
             expression,
         })
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Expression {}
-
-parser! {
-    pub(crate) fn expression_mock[Input](
-
-    )(Input) -> Expression
-    where [Input: Stream<Token = Token>]
-    {
-        // TODO 実装する
-        identifier()
-        .with(value(Expression{}))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use super::super::expression_parser::{KeywordConstant, Term};
     use crate::jack::jack_parser::tests::easy_parser_assert_token;
     use crate::tokens;
 
-    macro_rules! make_sample_let_statement(
-        ($name: literal) => {
-            tokens!(
-                keyword: Let,
-                ident: $name,
-                symbol: SquareBracketStart,
-                ident: "expression_mock",
-                symbol: SquareBracketEnd,
-                symbol: Equal,
-                ident: "expression_mock",
-                symbol: SemiColon,
-            )
+    // true
+    fn expr_true() -> Expression {
+        Expression {
+            term: Term::KeywordConstant(KeywordConstant::True),
+            subsequent_terms: vec![],
         }
-    );
+    }
+
+    // 1
+    fn expr_one() -> Expression {
+        Expression {
+            term: Term::IntegerConstant(1),
+            subsequent_terms: vec![],
+        }
+    }
+
+    fn let_a_equal_one() -> Vec<Token> {
+        tokens!(
+            keyword: Let,
+            ident: "a",
+            symbol: Equal,
+            int_const: 1,
+            symbol: SemiColon,
+        )
+    }
+    fn let_b_equal_one() -> Vec<Token> {
+        tokens!(
+            keyword: Let,
+            ident: "b",
+            symbol: Equal,
+            int_const: 1,
+            symbol: SemiColon,
+        )
+    }
 
     #[test]
     fn parse_statement_recursive() {
@@ -197,22 +192,22 @@ mod tests {
                 tokens!(
                     keyword: If,
                     symbol: RoundBracketStart,
-                    ident: "expression_mock",
+                    keyword: True,
                     symbol: RoundBracketEnd,
                     symbol: WaveBracketStart,
                 ),
-                make_sample_let_statement!("a"),
+                let_a_equal_one(),
                 tokens!(symbol: WaveBracketEnd,),
             ]
             .into_iter()
             .flatten()
             .collect::<Vec<_>>(),
             Statement::If(IfStatement {
-                condition: Expression {},
+                condition: expr_true(),
                 if_statements: vec![Statement::Let(LetStatement {
-                    source: Expression {},
+                    source: expr_one(),
                     target_name: "a".to_string(),
-                    target_index: Some(Expression {}),
+                    target_index: None,
                 })],
                 else_statements: vec![],
             }),
@@ -223,9 +218,9 @@ mod tests {
     fn parse_let_statement() {
         easy_parser_assert_token(
             let_statement(),
-            &make_sample_let_statement!("a"),
+            &let_a_equal_one(),
             LetStatement {
-                source: Expression {},
+                source: expr_one(),
                 target_name: "a".to_string(),
                 target_index: None,
             },
@@ -237,16 +232,16 @@ mod tests {
                 keyword: Let,
                 ident: "a",
                 symbol: SquareBracketStart,
-                ident: "expression_mock",
+                int_const: 1,
                 symbol: SquareBracketEnd,
                 symbol: Equal,
-                ident: "expression_mock",
+                int_const: 1,
                 symbol: SemiColon,
             ),
             LetStatement {
-                source: Expression {},
+                source: expr_one(),
                 target_name: "a".to_string(),
-                target_index: Some(Expression {}),
+                target_index: Some(expr_one()),
             },
         )
     }
@@ -264,22 +259,22 @@ mod tests {
                 tokens!(
                     keyword: If,
                     symbol: RoundBracketStart,
-                    ident: "expression_mock",
+                    keyword: True,
                     symbol: RoundBracketEnd,
                     symbol: WaveBracketStart,
                 ),
-                make_sample_let_statement!("a"),
+                let_a_equal_one(),
                 tokens!(symbol: WaveBracketEnd,),
             ]
             .into_iter()
             .flatten()
             .collect::<Vec<_>>(),
             IfStatement {
-                condition: Expression {},
+                condition: expr_true(),
                 if_statements: vec![Statement::Let(LetStatement {
-                    source: Expression {},
+                    source: expr_one(),
                     target_name: "a".to_string(),
-                    target_index: Some(Expression {}),
+                    target_index: None,
                 })],
                 else_statements: vec![],
             },
@@ -297,33 +292,33 @@ mod tests {
                 tokens!(
                     keyword: If,
                     symbol: RoundBracketStart,
-                    ident: "expression_mock",
+                    keyword: True,
                     symbol: RoundBracketEnd,
                     symbol: WaveBracketStart,
                 ),
-                make_sample_let_statement!("a"),
+                let_a_equal_one(),
                 tokens!(
                     symbol: WaveBracketEnd,
                     keyword: Else,
                     symbol: WaveBracketStart,
                 ),
-                make_sample_let_statement!("b"),
+                let_b_equal_one(),
                 tokens!(symbol: WaveBracketEnd,),
             ]
             .into_iter()
             .flatten()
             .collect::<Vec<_>>(),
             IfStatement {
-                condition: Expression {},
+                condition: expr_true(),
                 if_statements: vec![Statement::Let(LetStatement {
-                    source: Expression {},
+                    source: expr_one(),
                     target_name: "a".to_string(),
-                    target_index: Some(Expression {}),
+                    target_index: None,
                 })],
                 else_statements: vec![Statement::Let(LetStatement {
-                    source: Expression {},
+                    source: expr_one(),
                     target_name: "b".to_string(),
-                    target_index: Some(Expression {}),
+                    target_index: None,
                 })],
             },
         );
@@ -342,22 +337,22 @@ mod tests {
                 tokens!(
                     keyword: While,
                     symbol: RoundBracketStart,
-                    ident: "expression_mock",
+                    keyword: True,
                     symbol: RoundBracketEnd,
                     symbol: WaveBracketStart,
                 ),
-                make_sample_let_statement!("a"),
+                let_a_equal_one(),
                 tokens!(symbol: WaveBracketEnd,),
             ]
             .into_iter()
             .flatten()
             .collect::<Vec<_>>(),
             WhileStatement {
-                condition: Expression {},
+                condition: expr_true(),
                 statements: vec![Statement::Let(LetStatement {
-                    source: Expression {},
+                    source: expr_one(),
                     target_name: "a".to_string(),
-                    target_index: Some(Expression {}),
+                    target_index: None,
                 })],
             },
         );
@@ -372,11 +367,18 @@ mod tests {
             do_statement(),
             &tokens!(
                 keyword: Do,
-                ident: "subroutine_call_mock",
+                ident: "get",
+                symbol: RoundBracketStart,
+                int_const: 1,
+                symbol: RoundBracketEnd,
                 symbol: SemiColon,
             ),
             DoStatement {
-                subroutine_call: SubroutineCall {},
+                subroutine_call: SubroutineCall {
+                    subroutine_holder_name: None,
+                    subroutine_name: "get".to_string(),
+                    subroutine_args: vec![expr_one()],
+                },
             },
         );
     }
@@ -388,13 +390,9 @@ mod tests {
         */
         easy_parser_assert_token(
             return_statement(),
-            &tokens!(
-                keyword: Return,
-                ident: "expression_mock",
-                symbol: SemiColon,
-            ),
+            &tokens!(keyword: Return, keyword: True, symbol: SemiColon,),
             ReturnStatement {
-                expression: Some(Expression {}),
+                expression: Some(expr_true()),
             },
         );
         /*

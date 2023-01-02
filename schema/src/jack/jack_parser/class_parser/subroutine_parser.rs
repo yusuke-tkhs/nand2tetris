@@ -1,5 +1,5 @@
-mod expression;
-mod statement;
+mod expression_parser;
+mod statement_parser;
 
 use super::type_parser::{type_decleration, TypeDecleration};
 use crate::jack::jack_parser::common::{
@@ -7,6 +7,7 @@ use crate::jack::jack_parser::common::{
 };
 use crate::jack::jack_parser::*;
 use combine::many;
+use statement_parser::{statement, Statement};
 
 use crate::keyword_parsable_enum;
 
@@ -94,7 +95,7 @@ parser! {
     where [Input: Stream<Token = Token>]
     {
         many(subroutine_variable_decleration())
-        .and(many(mock_statement()))
+        .and(many(statement()))
         .map(|(variable_declerations, statements)|SubroutineBody {
             variable_declerations,
             statements,
@@ -124,21 +125,10 @@ parser! {
         })
     }
 }
-// dummy
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Statement {}
-
-parser! {
-    pub(crate) fn mock_statement[Input]()(Input) -> Statement
-    where [Input: Stream<Token = Token>]
-    {
-        identifier()
-        .with(value(Statement{}))
-    }
-}
 
 #[cfg(test)]
 mod tests {
+    use super::statement_parser::ReturnStatement;
     use super::*;
     use crate::jack::jack_parser::tests::easy_parser_assert_token;
     use crate::tokens;
@@ -163,7 +153,8 @@ mod tests {
                 keyword: Boolean,
                 ident: "var_name",
                 symbol: SemiColon,
-                ident: "statement_mock",
+                keyword: Return,
+                symbol: SemiColon,
                 symbol: WaveBracketEnd,
             ),
             ClassSubroutineDecleration {
@@ -187,7 +178,7 @@ mod tests {
                         variable_type: TypeDecleration::Boolean,
                         names: vec!["var_name".to_string()],
                     }],
-                    statements: vec![Statement {}],
+                    statements: vec![Statement::Return(ReturnStatement { expression: None })],
                 },
             },
         )

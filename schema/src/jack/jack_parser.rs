@@ -171,7 +171,11 @@ mod tests {
     {
         match parser.easy_parse(input) {
             Ok((output, _)) => assert_eq!(output, expected),
-            Err(e) => panic!("{:?}", e),
+            Err(e) => {
+                // let position_translated_error = e.map_position(|p| p.translate_position(input));
+                // panic!("{:?}", position_translated_error)
+                panic!("{:?}", e)
+            }
         }
     }
 

@@ -8,9 +8,9 @@ use combine::{many, optional};
 /// 式は、１つ以上の「項」から構成される。
 /// ２つ以上の「項」を含む場合、それらは二項演算子で接続される。
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Expression {
-    term: Term,
-    subsequent_terms: Vec<(BinaryOperator, Term)>,
+pub(crate) struct Expression {
+    pub term: Term,
+    pub subsequent_terms: Vec<(BinaryOperator, Term)>,
 }
 
 parser! {
@@ -116,9 +116,9 @@ keyword_parsable_enum! {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct SubroutineCall {
-    subroutine_holder_name: Option<String>, // (className | varName).subroutine(args) のときSome
-    subroutine_name: String,
-    subroutine_args: Vec<Expression>,
+    pub subroutine_holder_name: Option<String>, // (className | varName).subroutine(args) のときSome
+    pub subroutine_name: String,
+    pub subroutine_args: Vec<Expression>,
 }
 
 parser! {
