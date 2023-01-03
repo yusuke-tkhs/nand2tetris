@@ -279,7 +279,7 @@ fn test_xml_to_string() {
         }],
     };
     assert_eq!(
-        xml_node.to_string(0),
+        xml_node.into_string(0),
         vec![
             "<expression>",
             "  <term>",
