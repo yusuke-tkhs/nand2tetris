@@ -27,6 +27,14 @@ macro_rules! keyword_parsable_enum{
                 inner_fn()
             }
         }
+
+        impl From<$enum_name> for Keyword {
+            fn from(src: $enum_name) -> Self {
+                match src {
+                    $($enum_name::$case_name => Self::$case_name),+
+                }
+            }
+        }
     }
 }
 pub(super) use keyword_parsable_enum;
@@ -58,6 +66,13 @@ macro_rules! symbol_parsable_enum{
                     }
                 }
                 inner_fn()
+            }
+        }
+        impl From<$enum_name> for Symbol {
+            fn from(src: $enum_name) -> Self {
+                match src {
+                    $($enum_name::$case_name => Self::$symbol_name),+
+                }
             }
         }
     }

@@ -39,7 +39,7 @@ macro_rules! parsable_enum{
                 }
                 inner_fn()
             }
-            $enum_vis fn as_str(&self) -> &str {
+            $enum_vis fn as_str(&self) -> &'static str {
                 match self {
                     $(Self::$case_name => $case_string),+
                 }

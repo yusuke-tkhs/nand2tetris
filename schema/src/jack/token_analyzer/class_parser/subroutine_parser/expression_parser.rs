@@ -89,7 +89,7 @@ parser! {
 }
 
 symbol_parsable_enum! {
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum BinaryOperator {
         Plus: Plus,
         Minus: Minus,
@@ -103,7 +103,7 @@ symbol_parsable_enum! {
 }
 
 symbol_parsable_enum! {
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum UnaryOperator {
         Not: Tilde,
         Minus: Minus,
@@ -111,7 +111,7 @@ symbol_parsable_enum! {
 }
 
 keyword_parsable_enum! {
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(Debug, Clone,Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum KeywordConstant {
         True,
         False,

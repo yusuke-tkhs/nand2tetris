@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = {workspace = true}
+itertools = "0.10.5"
 schema = {workspace = true}

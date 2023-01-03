@@ -65,7 +65,7 @@ parser! {
 }
 
 keyword_parsable_enum! {
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(Debug, Clone,Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum ClassSubroutineType {
         Constructor,
         Function,
@@ -111,8 +111,8 @@ parser! {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SubroutineVariableDecleration {
-    variable_type: TypeDecleration,
-    names: Vec<String>,
+    pub variable_type: TypeDecleration,
+    pub names: Vec<String>,
 }
 
 parser! {

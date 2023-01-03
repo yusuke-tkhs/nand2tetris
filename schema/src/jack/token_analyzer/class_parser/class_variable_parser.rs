@@ -18,7 +18,7 @@ pub struct ClassVariableDecleration {
 }
 
 keyword_parsable_enum! {
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum ClassVariableType {
         Static,
         Field,
