@@ -103,6 +103,8 @@ impl XmlNode {
     }
 }
 
+const INDENT: &str = "  ";
+
 #[test]
 fn test_xml_to_string() {
     let xml_node = XmlNode::NonTerminal {
@@ -127,5 +129,3 @@ fn test_xml_to_string() {
         .join("\n")
     )
 }
-
-const INDENT: &str = "  ";
