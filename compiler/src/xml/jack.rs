@@ -23,7 +23,7 @@ impl XmlNode {
     fn into_string(self, num_indent: usize) -> String {
         match self {
             Self::Terminal { key, value } => {
-                let sanitized_value = super::sanitize(value.to_string());
+                let sanitized_value = super::sanitize(value);
                 let indent = INDENT.repeat(num_indent);
                 format!("{indent}<{key}> {sanitized_value} </{key}>")
             }
@@ -108,7 +108,7 @@ impl XmlNode {
                 class_var_dec
                     .var_names
                     .iter()
-                    .map(|s| Self::from_identifier(&s))
+                    .map(|s| Self::from_identifier(s))
                     .intersperse(Self::from_symbol(Symbol::Comma)),
             )
             .collect(),
@@ -119,7 +119,7 @@ impl XmlNode {
             TypeDecleration::Int => Self::from_keyword(Keyword::Int),
             TypeDecleration::Char => Self::from_keyword(Keyword::Char),
             TypeDecleration::Boolean => Self::from_keyword(Keyword::Boolean),
-            TypeDecleration::ClassName(class_name) => Self::from_identifier(&class_name),
+            TypeDecleration::ClassName(class_name) => Self::from_identifier(class_name),
         }
     }
     fn from_subroutine_dec(subroutine_dec: &ClassSubroutineDecleration) -> Self {
@@ -216,13 +216,62 @@ impl XmlNode {
         }
     }
     fn from_while_statement(while_statement: &WhileStatement) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "whileStatement",
+            values: vec![
+                Self::from_keyword(Keyword::While),
+                Self::from_symbol(Symbol::RoundBracketStart),
+                Self::from_expression(&while_statement.condition),
+                Self::from_symbol(Symbol::RoundBracketEnd),
+                Self::from_symbol(Symbol::WaveBracketStart),
+                Self::from_statements(&while_statement.statements),
+                Self::from_symbol(Symbol::WaveBracketEnd),
+            ],
+        }
     }
     fn from_if_statement(if_statement: &IfStatement) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "ifStatement",
+            values: [
+                Self::from_keyword(Keyword::If),
+                Self::from_symbol(Symbol::RoundBracketStart),
+                Self::from_expression(&if_statement.condition),
+                Self::from_symbol(Symbol::RoundBracketEnd),
+                Self::from_symbol(Symbol::WaveBracketStart),
+                Self::from_statements(&if_statement.if_statements),
+                Self::from_symbol(Symbol::WaveBracketEnd),
+            ]
+            .into_iter()
+            .chain(
+                if if_statement.else_statements.is_empty() {
+                    vec![]
+                } else {
+                    vec![
+                        Self::from_keyword(Keyword::Else),
+                        Self::from_symbol(Symbol::WaveBracketStart),
+                        Self::from_statements(&if_statement.else_statements),
+                        Self::from_symbol(Symbol::WaveBracketEnd),
+                    ]
+                }
+                .into_iter(),
+            )
+            .collect(),
+        }
     }
     fn from_return_statement(return_statement: &ReturnStatement) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "returnStatement",
+            values: std::iter::once(Self::from_keyword(Keyword::Return))
+                .chain(
+                    return_statement
+                        .expression
+                        .as_ref()
+                        .map(Self::from_expression)
+                        .into_iter(),
+                )
+                .chain(std::iter::once(Self::from_symbol(Symbol::SemiColon)))
+                .collect(),
+        }
     }
     fn from_let_statement(let_statement: &LetStatement) -> Self {
         Self::NonTerminal {
@@ -251,16 +300,83 @@ impl XmlNode {
         }
     }
     fn from_do_statement(do_statement: &DoStatement) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "doStatement",
+            values: std::iter::once(Self::from_keyword(Keyword::Do))
+                .chain(Self::from_subroutine_call(&do_statement.subroutine_call).into_iter())
+                .chain(std::iter::once(Self::from_symbol(Symbol::SemiColon)))
+                .collect(),
+        }
+    }
+    fn from_subroutine_call(subroutine_call: &SubroutineCall) -> Vec<Self> {
+        if let Some(holder_name) = &subroutine_call.subroutine_holder_name {
+            vec![
+                Self::from_identifier(holder_name),
+                Self::from_symbol(Symbol::Dot),
+            ]
+        } else {
+            vec![]
+        }
+        .into_iter()
+        .chain([
+            Self::from_identifier(&subroutine_call.subroutine_name),
+            Self::from_symbol(Symbol::RoundBracketStart),
+            Self::from_expression_list(&subroutine_call.subroutine_args),
+            Self::from_symbol(Symbol::RoundBracketEnd),
+        ])
+        .collect()
     }
     fn from_expression(expression: &Expression) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "expression",
+            values: std::iter::once(Self::from_term(&expression.term))
+                .chain(
+                    expression
+                        .subsequent_terms
+                        .iter()
+                        .flat_map(|(op, term)| [Self::from_symbol(*op), Self::from_term(term)]),
+                )
+                .collect(),
+        }
     }
     fn from_term(term: &Term) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "term",
+            values: match term {
+                Term::IntegerConstant(int_const) => vec![Self::from_integer_constant(int_const)],
+                Term::StringConstant(str_const) => vec![Self::from_string_constant(str_const)],
+                Term::KeywordConstant(keyword) => vec![Self::from_keyword(*keyword)],
+                Term::Identifier(ident) => vec![Self::from_identifier(ident)],
+                Term::ArrayIdentifier(ident, expr) => vec![
+                    Self::from_identifier(ident),
+                    Self::from_symbol(Symbol::AngleBracketStart),
+                    Self::from_expression(expr),
+                    Self::from_symbol(Symbol::AngleBracketEnd),
+                ],
+                Term::SubroutineCall(subroutine_call) => {
+                    Self::from_subroutine_call(subroutine_call)
+                }
+                Term::RoundBraketedExpr(expr) => vec![
+                    Self::from_symbol(Symbol::RoundBracketStart),
+                    Self::from_expression(expr),
+                    Self::from_symbol(Symbol::RoundBracketEnd),
+                ],
+                Term::UnaryOperatedExpr(op, term) => {
+                    vec![Self::from_symbol(*op), Self::from_term(term)]
+                }
+            },
+        }
     }
     fn from_expression_list(expresion_list: &[Expression]) -> Self {
-        unimplemented!()
+        Self::NonTerminal {
+            key: "expressionList",
+            #[allow(unstable_name_collisions)]
+            values: expresion_list
+                .iter()
+                .map(Self::from_expression)
+                .intersperse(Self::from_symbol(Symbol::Comma))
+                .collect(),
+        }
     }
 }
 
