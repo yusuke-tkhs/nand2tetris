@@ -99,6 +99,7 @@ symbol_parsable_enum! {
         Or: Pipe,
         SmallerThan: AngleBracketStart,
         LargerThan: AngleBracketEnd,
+        Equal: Equal,
     }
 }
 

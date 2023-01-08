@@ -16,7 +16,7 @@ pub fn parse_tokens_as_class(input: &[Token]) -> anyhow::Result<Class> {
     use combine::EasyParser;
     let parsed = class()
         .easy_parse(input)
-        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+        .map_err(|err| anyhow::anyhow!("{:?}", err))?;
     Ok(parsed.0)
 }
 

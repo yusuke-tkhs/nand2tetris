@@ -55,6 +55,7 @@ parser! {
             target_name,
             target_index,
         })
+        .message("let_statement failed")
     }
 }
 
@@ -62,7 +63,7 @@ parser! {
 pub struct IfStatement {
     pub condition: Expression,
     pub if_statements: Vec<Statement>,
-    pub else_statements: Vec<Statement>, // else 句が無い場合は空
+    pub else_statements: Option<Vec<Statement>>,
 }
 
 parser! {
@@ -79,7 +80,7 @@ parser! {
         .map(|((condition,if_statements), else_statements)|IfStatement{
             condition,
             if_statements,
-            else_statements: else_statements.unwrap_or_default(),
+            else_statements,
         })
     }
 }
@@ -183,41 +184,6 @@ mod tests {
     }
 
     #[test]
-    fn parse_statement_recursive() {
-        /*
-            if (expr) {
-                let a = expr;
-            }
-        */
-        easy_parser_assert_token(
-            statement(),
-            &vec![
-                tokens!(
-                    keyword: If,
-                    symbol: RoundBracketStart,
-                    keyword: True,
-                    symbol: RoundBracketEnd,
-                    symbol: WaveBracketStart,
-                ),
-                let_a_equal_one(),
-                tokens!(symbol: WaveBracketEnd,),
-            ]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>(),
-            Statement::If(IfStatement {
-                condition: expr_true(),
-                if_statements: vec![Statement::Let(LetStatement {
-                    source: expr_one(),
-                    target_name: "a".to_string(),
-                    target_index: None,
-                })],
-                else_statements: vec![],
-            }),
-        );
-    }
-
-    #[test]
     fn parse_let_statement() {
         easy_parser_assert_token(
             let_statement(),
@@ -279,7 +245,7 @@ mod tests {
                     target_name: "a".to_string(),
                     target_index: None,
                 })],
-                else_statements: vec![],
+                else_statements: None,
             },
         );
         /*
@@ -318,11 +284,40 @@ mod tests {
                     target_name: "a".to_string(),
                     target_index: None,
                 })],
-                else_statements: vec![Statement::Let(LetStatement {
+                else_statements: Some(vec![Statement::Let(LetStatement {
                     source: expr_one(),
                     target_name: "b".to_string(),
                     target_index: None,
-                })],
+                })]),
+            },
+        );
+    }
+
+    #[test]
+    fn parse_blank_if_statement() {
+        /*
+            if (true) {
+            }
+            else {
+            }
+        */
+        easy_parser_assert_token(
+            if_statement(),
+            &tokens!(
+                keyword: If,
+                symbol: RoundBracketStart,
+                keyword: True,
+                symbol: RoundBracketEnd,
+                symbol: WaveBracketStart,
+                symbol: WaveBracketEnd,
+                keyword: Else,
+                symbol: WaveBracketStart,
+                symbol: WaveBracketEnd,
+            ),
+            IfStatement {
+                condition: expr_true(),
+                if_statements: vec![],
+                else_statements: Some(vec![]),
             },
         );
     }

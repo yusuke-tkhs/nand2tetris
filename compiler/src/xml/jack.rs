@@ -45,6 +45,7 @@ impl XmlNode {
         Self::NonTerminal {
             key: "class",
             values: [
+                Self::from_keyword(Keyword::Class),
                 Self::from_identifier(&class.class_name),
                 Self::from_symbol(Symbol::WaveBracketStart),
             ]
@@ -111,6 +112,7 @@ impl XmlNode {
                     .map(|s| Self::from_identifier(s))
                     .intersperse(Self::from_symbol(Symbol::Comma)),
             )
+            .chain(std::iter::once(Self::from_symbol(Symbol::SemiColon)))
             .collect(),
         }
     }
@@ -193,6 +195,7 @@ impl XmlNode {
                     .map(|name| Self::from_identifier(name))
                     .intersperse(Self::from_symbol(Symbol::Comma)),
             )
+            .chain(std::iter::once(Self::from_symbol(Symbol::SemiColon)))
             .collect(),
         }
     }
@@ -243,15 +246,15 @@ impl XmlNode {
             ]
             .into_iter()
             .chain(
-                if if_statement.else_statements.is_empty() {
-                    vec![]
-                } else {
+                if let Some(else_statements) = &if_statement.else_statements {
                     vec![
                         Self::from_keyword(Keyword::Else),
                         Self::from_symbol(Symbol::WaveBracketStart),
-                        Self::from_statements(&if_statement.else_statements),
+                        Self::from_statements(else_statements),
                         Self::from_symbol(Symbol::WaveBracketEnd),
                     ]
+                } else {
+                    vec![]
                 }
                 .into_iter(),
             )
@@ -292,6 +295,7 @@ impl XmlNode {
                 vec![
                     Self::from_symbol(Symbol::Equal),
                     Self::from_expression(&let_statement.source),
+                    Self::from_symbol(Symbol::SemiColon),
                 ],
             ]
             .into_iter()
@@ -349,9 +353,9 @@ impl XmlNode {
                 Term::Identifier(ident) => vec![Self::from_identifier(ident)],
                 Term::ArrayIdentifier(ident, expr) => vec![
                     Self::from_identifier(ident),
-                    Self::from_symbol(Symbol::AngleBracketStart),
+                    Self::from_symbol(Symbol::SquareBracketStart),
                     Self::from_expression(expr),
-                    Self::from_symbol(Symbol::AngleBracketEnd),
+                    Self::from_symbol(Symbol::SquareBracketEnd),
                 ],
                 Term::SubroutineCall(subroutine_call) => {
                     Self::from_subroutine_call(subroutine_call)
