@@ -43,7 +43,6 @@ fn generate_files(path: impl AsRef<Path>) -> anyhow::Result<()> {
     std::fs::write(output_tokens_xml_path(&path).unwrap(), tokens_xml)?;
 
     let class = parse_tokens_as_class(&tokens)?;
-    dbg!(&class);
     let class_xml = xml::class_to_xml(&class);
     std::fs::write(output_jack_token_xml_path(&path).unwrap(), class_xml)?;
 
@@ -51,7 +50,6 @@ fn generate_files(path: impl AsRef<Path>) -> anyhow::Result<()> {
 }
 
 fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<Token>> {
-    dbg!(&input_path.as_ref());
     let input = std::fs::read_to_string(input_path.as_ref())?;
     tokenize(input)
 }
