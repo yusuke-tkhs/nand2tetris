@@ -1,3 +1,4 @@
+mod codegen;
 mod xml;
 
 use schema::jack::{
@@ -46,6 +47,10 @@ fn generate_files(path: impl AsRef<Path>) -> anyhow::Result<()> {
     let class_xml = xml::class_to_xml(&class);
     std::fs::write(output_jack_token_xml_path(&path).unwrap(), class_xml)?;
 
+    let vm_commands = codegen::class_to_commands(&class);
+    let vm_code = codegen::commands_to_code(&vm_commands);
+    std::fs::write(output_vm_path(&path).unwrap(), vm_code)?;
+
     Ok(())
 }
 
@@ -54,19 +59,24 @@ fn construct_tokens(input_path: impl AsRef<Path>) -> anyhow::Result<Vec<Token>> 
     tokenize(input)
 }
 
-// jack言語から生成されたxml言語を出力するパス
-fn output_xml_path(path: impl AsRef<Path>, suffix: &str) -> Option<PathBuf> {
+// jack言語から生成されたファイルを出力するパス
+fn output_path(path: impl AsRef<Path>, suffix: &str, extension: &str) -> Option<PathBuf> {
     let stem = path.as_ref().file_stem()?.to_str()?;
     let parent = path.as_ref().parent()?;
-    Some(parent.join(format!("{stem}{suffix}.xml")))
+    Some(parent.join(format!("{stem}{suffix}.{extension}")))
 }
 
 // 字句解析結果の出力先
 fn output_tokens_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
-    output_xml_path(path, "T_by_compiler")
+    output_path(path, "T_by_compiler", "xml")
 }
 
 // 構文解析結果の出力先
 fn output_jack_token_xml_path(path: impl AsRef<Path>) -> Option<PathBuf> {
-    output_xml_path(path, "_by_compiler")
+    output_path(path, "_by_compiler", "xml")
+}
+
+// コンパイル結果の出力先
+fn output_vm_path(path: impl AsRef<Path>) -> Option<PathBuf> {
+    output_path(path, "", "vm")
 }
