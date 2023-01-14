@@ -17,7 +17,7 @@ pub use class_parser::{
             DoStatement, IfStatement, LetStatement, ReturnStatement, Statement, WhileStatement,
         },
         ClassSubroutineDecleration, ClassSubroutineParameter, ClassSubroutineReturnType,
-        SubroutineBody, SubroutineVariableDecleration,
+        ClassSubroutineType, SubroutineBody, SubroutineVariableDecleration,
     },
     type_parser::TypeDecleration,
     Class,
