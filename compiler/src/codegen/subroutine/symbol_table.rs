@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use schema::jack::token_analyzer::TypeDecleration;
 use schema::vm;
+use std::collections::HashMap;
 
 /*
     関数の引数とローカル変数からシンボルテーブルを作成する
@@ -25,10 +25,16 @@ use schema::vm;
     ★やはりIdentifierやStringConstantを値オブジェクトにしたほうが
     シグネチャが分かりやすくなるかもしれない
 */
-pub(super) struct SymbolTable{}
+pub(super) struct SymbolTable {}
 
 impl SymbolTable {
-    fn get(&self, symbol: &str) -> (vm::Segment, vm::Index) {
+    pub(super) fn get(&self, symbol: &str) -> (vm::Segment, vm::Index) {
+        unimplemented!()
+    }
+    pub(super) fn push_command(&self, symbol: &str) -> vm::Command {
+        unimplemented!()
+    }
+    pub(super) fn pop_command(&self, symbol: &str) -> vm::Command {
         unimplemented!()
     }
 }
@@ -36,7 +42,7 @@ impl SymbolTable {
 pub(super) struct ClassScopeSymbolTable(HashMap<String, ClassSymbolTableRecord>);
 
 // impl ClassScopeSymbolTable {
-//     fn 
+//     fn
 // }
 
 #[derive(Clone)]
