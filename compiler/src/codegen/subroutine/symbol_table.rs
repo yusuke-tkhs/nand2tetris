@@ -31,6 +31,8 @@ impl SymbolTable {
     pub(super) fn get(&self, symbol: &str) -> (vm::Segment, vm::Index) {
         unimplemented!()
     }
+    // クラスのフィールドなどthis pointer 経由のコマンドになる場合も想定する
+    // 戻り値をVecにしないといけないかも？
     pub(super) fn push_command(&self, symbol: &str) -> vm::Command {
         unimplemented!()
     }
