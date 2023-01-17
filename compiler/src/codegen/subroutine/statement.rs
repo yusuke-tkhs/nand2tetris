@@ -1,5 +1,7 @@
-use super::expression::expression_to_commands;
+mod expression;
+
 use super::symbol_table::SymbolTable;
+use expression::expression_to_commands;
 use schema::jack::token_analyzer::*;
 use schema::vm;
 
@@ -35,16 +37,8 @@ fn let_statement_to_commands(
         // pop pointer 1
         // push value
         // pop that 0
-        std::iter::once(symbol_table.push_command(&statement.target_name))
-            .chain(expression_to_commands(symbol_table, index_expr))
-            .chain([
-                vm::Command::Arithmetic(vm::ArithmeticCommand::Add),
-                vm::Command::MemoryAccess(vm::MemoryAccessCommand {
-                    access_type: vm::AccessType::Pop,
-                    segment: vm::Segment::Pointer,
-                    index: vm::Index::new(1),
-                }),
-            ])
+        set_array_address(symbol_table, &statement.target_name, index_expr)
+            .into_iter()
             .chain(expression_to_commands(symbol_table, index_expr))
             .chain(std::iter::once(vm::Command::MemoryAccess(
                 vm::MemoryAccessCommand {
@@ -92,4 +86,33 @@ fn return_statement_to_commands(
     statement: &ReturnStatement,
 ) -> Vec<vm::Command> {
     unimplemented!()
+}
+
+// 配列の先頭アドレス＋インデックスを計算し、
+// 仮想 that セグメントに格納する vm コマンドを生成する
+fn set_array_address(
+    symbol_table: &SymbolTable,
+    array_ident: &str,
+    index_expr: &Expression,
+) -> Vec<vm::Command> {
+    // jack:
+    // array[index]
+    // pesudo vm:
+    // push array
+    // push index
+    // add
+    // pop pointer 1
+    symbol_table
+        .push_command(array_ident)
+        .into_iter()
+        .chain(expression_to_commands(symbol_table, index_expr))
+        .chain([
+            vm::Command::Arithmetic(vm::ArithmeticCommand::Add),
+            vm::Command::MemoryAccess(vm::MemoryAccessCommand {
+                access_type: vm::AccessType::Pop,
+                segment: vm::Segment::Pointer,
+                index: vm::Index::new(1),
+            }),
+        ])
+        .collect()
 }

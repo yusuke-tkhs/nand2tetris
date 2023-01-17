@@ -1,4 +1,3 @@
-mod expression;
 mod statement;
 mod symbol_table;
 
@@ -41,7 +40,7 @@ fn constructor_to_commands(
     body: &SubroutineBody,
     // class のSymbolTableを受け取るほうが良さそう
 ) -> Vec<vm::Command> {
-    let symbol_table = SymbolTable {};
+    let symbol_table = SymbolTable::empty();
 
     // function class_name.function_name n
     std::iter::once(vm::Command::Function {

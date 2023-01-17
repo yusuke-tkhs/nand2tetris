@@ -25,15 +25,32 @@ use std::collections::HashMap;
     ★やはりIdentifierやStringConstantを値オブジェクトにしたほうが
     シグネチャが分かりやすくなるかもしれない
 */
-pub(super) struct SymbolTable {}
+pub(super) struct SymbolTable {
+    table: HashMap<String, ClassSymbolTableRecord>, // (型名、属性、番号)
+}
 
 impl SymbolTable {
+    pub(super) fn empty() -> Self {
+        Self {
+            table: Default::default(),
+        }
+    }
+
     pub(super) fn get(&self, symbol: &str) -> (vm::Segment, vm::Index) {
+        unimplemented!()
+    }
+    pub(super) fn contains(&self, symbol: &str) -> bool {
+        unimplemented!()
+    }
+    pub(super) fn get_type_name(&self, symbol: &str) -> String {
+        unimplemented!()
+    }
+    pub(super) fn get_class_name(&self) -> String {
         unimplemented!()
     }
     // クラスのフィールドなどthis pointer 経由のコマンドになる場合も想定する
     // 戻り値をVecにしないといけないかも？
-    pub(super) fn push_command(&self, symbol: &str) -> vm::Command {
+    pub(super) fn push_command(&self, symbol: &str) -> Vec<vm::Command> {
         unimplemented!()
     }
     pub(super) fn pop_command(&self, symbol: &str) -> vm::Command {
@@ -64,4 +81,13 @@ pub(super) enum ClassSymbolAttribute {
 pub(super) enum FunctionSymbolAttribute {
     Argument,
     Var,
+}
+
+fn type_string(t: &TypeDecleration) -> String {
+    match t {
+        TypeDecleration::Boolean => "bool".to_string(),
+        TypeDecleration::Int => "int".to_string(),
+        TypeDecleration::Char => "char".to_string(),
+        TypeDecleration::ClassName(name) => name.clone(),
+    }
 }
