@@ -3,6 +3,7 @@ mod symbol_table;
 
 use schema::jack::token_analyzer::*;
 use schema::vm;
+use statement::LabelPublishers;
 use symbol_table::SymbolTable;
 
 pub(super) fn subroutine_dec_to_commands(
@@ -41,17 +42,18 @@ fn constructor_to_commands(
     // class のSymbolTableを受け取るほうが良さそう
 ) -> Vec<vm::Command> {
     let symbol_table = SymbolTable::empty();
+    let mut label_publishers = LabelPublishers::new(funcion_name);
+
+    // todo this レジスタの値入れるのとメモリ確保関数の呼び出しを追加する
 
     // function class_name.function_name n
     std::iter::once(vm::Command::Function {
         name: vm::Label::new(&format!("{}.{}", class_name, funcion_name)),
         local_variable_count: body.variable_declerations.len() as u16,
     })
-    .chain(
-        body.statements
-            .iter()
-            .flat_map(|statement| statement::statement_to_commands(&symbol_table, statement)),
-    )
+    .chain(body.statements.iter().flat_map(|statement| {
+        statement::statement_to_commands(&symbol_table, &mut label_publishers, statement)
+    }))
     .collect()
 }
 

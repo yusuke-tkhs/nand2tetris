@@ -5,15 +5,21 @@ use expression::expression_to_commands;
 use schema::jack::token_analyzer::*;
 use schema::vm;
 
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+
 pub(super) fn statement_to_commands(
     symbol_table: &SymbolTable,
+    label_publishers: &mut LabelPublishers,
     statement: &Statement,
 ) -> Vec<vm::Command> {
     match statement {
         Statement::Let(let_statement) => let_statement_to_commands(symbol_table, let_statement),
-        Statement::If(if_statement) => if_statement_to_commands(symbol_table, if_statement),
+        Statement::If(if_statement) => {
+            if_statement_to_commands(symbol_table, label_publishers, if_statement)
+        }
         Statement::While(while_statement) => {
-            while_statement_to_commands(symbol_table, while_statement)
+            while_statement_to_commands(symbol_table, label_publishers, while_statement)
         }
         Statement::Do(do_statement) => do_statement_to_commands(symbol_table, do_statement),
         Statement::Return(return_statement) => {
@@ -63,14 +69,53 @@ fn let_statement_to_commands(
             .collect()
     }
 }
+
 fn if_statement_to_commands(
     symbol_table: &SymbolTable,
+    label_publishers: &mut LabelPublishers,
     statement: &IfStatement,
 ) -> Vec<vm::Command> {
-    unimplemented!()
+    let (if_label_1, if_label_2) = label_publishers.if_publisher().publish();
+    let if_statement_commands: Vec<_> = statement
+        .if_statements
+        .iter()
+        .flat_map(|statement| statement_to_commands(symbol_table, label_publishers, statement))
+        .collect();
+    if let Some(else_statements) = &statement.else_statements {
+        // if 句と else 句の両方が存在する場合
+        expression_to_commands(&symbol_table, &statement.condition)
+            .into_iter()
+            .chain([
+                vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
+                vm::Command::IfGoto(if_label_1.clone()),
+            ])
+            .chain(if_statement_commands)
+            .chain([
+                vm::Command::Goto(if_label_2.clone()),
+                vm::Command::Label(if_label_1),
+            ])
+            .chain(else_statements.iter().flat_map(|statement| {
+                statement_to_commands(symbol_table, label_publishers, statement)
+            }))
+            .chain(std::iter::once(vm::Command::Label(if_label_2)))
+            .collect()
+    } else {
+        // if 句のみの場合
+        expression_to_commands(&symbol_table, &statement.condition)
+            .into_iter()
+            .chain([
+                vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
+                vm::Command::IfGoto(if_label_1.clone()),
+            ])
+            .chain(if_statement_commands)
+            .chain(std::iter::once(vm::Command::Label(if_label_1)))
+            .collect()
+    }
 }
+
 fn while_statement_to_commands(
     symbol_table: &SymbolTable,
+    label_publishers: &mut LabelPublishers,
     statement: &WhileStatement,
 ) -> Vec<vm::Command> {
     unimplemented!()
@@ -115,4 +160,41 @@ fn set_array_address(
             }),
         ])
         .collect()
+}
+
+pub(super) struct LabelPublishers {
+    if_publisher: LabelPublisher,
+    while_publisher: LabelPublisher,
+}
+
+impl LabelPublishers {
+    pub(super) fn new(fn_name: &str) -> Self {
+        Self {
+            if_publisher: LabelPublisher::new(format!("{fn_name}.If")),
+            while_publisher: LabelPublisher::new(format!("{fn_name}.While")),
+        }
+    }
+    fn if_publisher(&mut self) -> &mut LabelPublisher {
+        &mut self.if_publisher
+    }
+    fn while_publisher(&mut self) -> &mut LabelPublisher {
+        &mut self.while_publisher
+    }
+}
+
+struct LabelPublisher {
+    counter: usize,
+    prefix: String,
+}
+
+impl LabelPublisher {
+    pub fn new(prefix: String) -> Self {
+        Self { counter: 0, prefix }
+    }
+    pub fn publish(&mut self) -> (vm::Label, vm::Label) {
+        let l1 = format!("{}.{}.L1", self.prefix, self.counter);
+        let l2 = format!("{}.{}.L2", self.prefix, self.counter);
+        self.counter += 1;
+        (vm::Label::new(&l1), vm::Label::new(&l2))
+    }
 }
