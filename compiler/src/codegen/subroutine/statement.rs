@@ -1,12 +1,10 @@
 mod expression;
 
 use super::symbol_table::SymbolTable;
+use alloc::collections;
 use expression::expression_to_commands;
 use schema::jack::token_analyzer::*;
 use schema::vm;
-
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
 
 pub(super) fn statement_to_commands(
     symbol_table: &SymbolTable,
@@ -83,7 +81,7 @@ fn if_statement_to_commands(
         .collect();
     if let Some(else_statements) = &statement.else_statements {
         // if 句と else 句の両方が存在する場合
-        expression_to_commands(&symbol_table, &statement.condition)
+        expression_to_commands(symbol_table, &statement.condition)
             .into_iter()
             .chain([
                 vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
@@ -101,7 +99,7 @@ fn if_statement_to_commands(
             .collect()
     } else {
         // if 句のみの場合
-        expression_to_commands(&symbol_table, &statement.condition)
+        expression_to_commands(symbol_table, &statement.condition)
             .into_iter()
             .chain([
                 vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
@@ -116,21 +114,57 @@ fn if_statement_to_commands(
 fn while_statement_to_commands(
     symbol_table: &SymbolTable,
     label_publishers: &mut LabelPublishers,
-    statement: &WhileStatement,
+    while_statement: &WhileStatement,
 ) -> Vec<vm::Command> {
-    unimplemented!()
+    let (if_label_1, if_label_2) = label_publishers.while_publisher().publish();
+    std::iter::once(vm::Command::Label(if_label_1.clone()))
+        .chain(expression_to_commands(
+            symbol_table,
+            &while_statement.condition,
+        ))
+        .into_iter()
+        .chain([
+            vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
+            vm::Command::IfGoto(if_label_2.clone()),
+        ])
+        .chain(
+            while_statement.statements.iter().flat_map(|statement| {
+                statement_to_commands(symbol_table, label_publishers, statement)
+            }),
+        )
+        .chain([
+            vm::Command::Goto(if_label_1),
+            vm::Command::Label(if_label_2),
+        ])
+        .collect()
 }
 fn do_statement_to_commands(
     symbol_table: &SymbolTable,
-    statement: &DoStatement,
+    do_statement: &DoStatement,
 ) -> Vec<vm::Command> {
-    unimplemented!()
+    expression::subroutine_call_to_commands(symbol_table, &do_statement.subroutine_call)
 }
 fn return_statement_to_commands(
     symbol_table: &SymbolTable,
-    statement: &ReturnStatement,
+    return_statement: &ReturnStatement,
 ) -> Vec<vm::Command> {
-    unimplemented!()
+    if let Some(expr) = &return_statement.expression {
+        // 何らかの値を返す関数の場合
+        expression::expression_to_commands(symbol_table, expr)
+        .into_iter()
+        .chain(std::iter::once(vm::Command::Return))
+        .collect()
+    } else {
+        // void 型関数の場合
+        vec![
+            vm::Command::MemoryAccess(vm::MemoryAccessCommand{
+                access_type: vm::AccessType::Push,
+                segment: vm::Segment::Constant,
+                index: vm::Index::new(0),
+            }),
+            vm::Command::Return,
+        ]
+    }
 }
 
 // 配列の先頭アドレス＋インデックスを計算し、

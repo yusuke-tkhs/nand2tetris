@@ -134,82 +134,91 @@ fn term_to_commands(symbol_table: &SymbolTable, term: &Term) -> Vec<vm::Command>
                 )))
                 .collect()
         }
-        Term::SubroutineCall(subroutine_call) => match &subroutine_call.subroutine_holder_name {
-            Some(holder_name) => {
-                if symbol_table.contains(holder_name) {
-                    // オブジェクトのメソッドを呼び出す場合
-
-                    // 引数をスタックにPush
-                    symbol_table
-                        .push_command(holder_name)
-                        .into_iter()
-                        .chain(
-                            subroutine_call
-                                .subroutine_args
-                                .iter()
-                                .flat_map(|arg| expression_to_commands(symbol_table, arg)),
-                        )
-                        // サブルーチン呼び出し
-                        .chain(std::iter::once(vm::Command::Call {
-                            name: vm::Label::new(&format!(
-                                "{}.{}",
-                                symbol_table.get_type_name(holder_name),
-                                subroutine_call.subroutine_name
-                            )),
-                            args_count: (subroutine_call.subroutine_args.len() + 1) as u16,
-                        }))
-                        .collect()
-                } else {
-                    // クラスのファンクションを呼び出す場合
-                    // シンボルテーブルから holder_name が見つからない場合、holder_name はクラス名である
-
-                    // 引数をスタックにPush
-                    subroutine_call
-                        .subroutine_args
-                        .iter()
-                        .flat_map(|arg| expression_to_commands(symbol_table, arg))
-                        // サブルーチン呼び出し
-                        .chain(std::iter::once(vm::Command::Call {
-                            name: vm::Label::new(&format!(
-                                "{}.{}",
-                                holder_name, subroutine_call.subroutine_name
-                            )),
-                            args_count: subroutine_call.subroutine_args.len() as u16,
-                        }))
-                        .collect()
-                }
-            }
-            None => {
-                // thisオブジェクトのメソッドを呼び出す場合
-
-                // 引数をスタックにPush
-                std::iter::once(vm::Command::MemoryAccess(vm::MemoryAccessCommand {
-                    access_type: vm::AccessType::Push,
-                    segment: vm::Segment::Pointer,
-                    index: vm::Index::new(0),
-                }))
-                .chain(
-                    subroutine_call
-                        .subroutine_args
-                        .iter()
-                        .flat_map(|arg| expression_to_commands(symbol_table, arg)),
-                )
-                // サブルーチン呼び出し
-                .chain(std::iter::once(vm::Command::Call {
-                    name: vm::Label::new(&format!(
-                        "{}.{}",
-                        symbol_table.get_class_name(),
-                        subroutine_call.subroutine_name
-                    )),
-                    args_count: (subroutine_call.subroutine_args.len() + 1) as u16,
-                }))
-                .collect()
-            }
-        },
+        Term::SubroutineCall(subroutine_call) => {
+            subroutine_call_to_commands(symbol_table, subroutine_call)
+        }
         Term::RoundBraketedExpr(expr) => expression_to_commands(symbol_table, expr),
         Term::UnaryOperatedExpr(unary_op, term) => term_to_commands(symbol_table, term)
             .into_iter()
             .chain(unary_op_to_commands(unary_op))
             .collect(),
+    }
+}
+
+pub(super) fn subroutine_call_to_commands(
+    symbol_table: &SymbolTable,
+    subroutine_call: &SubroutineCall,
+) -> Vec<vm::Command> {
+    match &subroutine_call.subroutine_holder_name {
+        Some(holder_name) => {
+            if symbol_table.contains(holder_name) {
+                // オブジェクトのメソッドを呼び出す場合
+
+                // 引数をスタックにPush
+                symbol_table
+                    .push_command(holder_name)
+                    .into_iter()
+                    .chain(
+                        subroutine_call
+                            .subroutine_args
+                            .iter()
+                            .flat_map(|arg| expression_to_commands(symbol_table, arg)),
+                    )
+                    // サブルーチン呼び出し
+                    .chain(std::iter::once(vm::Command::Call {
+                        name: vm::Label::new(&format!(
+                            "{}.{}",
+                            symbol_table.get_type_name(holder_name),
+                            subroutine_call.subroutine_name
+                        )),
+                        args_count: (subroutine_call.subroutine_args.len() + 1) as u16,
+                    }))
+                    .collect()
+            } else {
+                // クラスのファンクションを呼び出す場合
+                // シンボルテーブルから holder_name が見つからない場合、holder_name はクラス名である
+
+                // 引数をスタックにPush
+                subroutine_call
+                    .subroutine_args
+                    .iter()
+                    .flat_map(|arg| expression_to_commands(symbol_table, arg))
+                    // サブルーチン呼び出し
+                    .chain(std::iter::once(vm::Command::Call {
+                        name: vm::Label::new(&format!(
+                            "{}.{}",
+                            holder_name, subroutine_call.subroutine_name
+                        )),
+                        args_count: subroutine_call.subroutine_args.len() as u16,
+                    }))
+                    .collect()
+            }
+        }
+        None => {
+            // thisオブジェクトのメソッドを呼び出す場合
+
+            // 引数をスタックにPush
+            std::iter::once(vm::Command::MemoryAccess(vm::MemoryAccessCommand {
+                access_type: vm::AccessType::Push,
+                segment: vm::Segment::Pointer,
+                index: vm::Index::new(0),
+            }))
+            .chain(
+                subroutine_call
+                    .subroutine_args
+                    .iter()
+                    .flat_map(|arg| expression_to_commands(symbol_table, arg)),
+            )
+            // サブルーチン呼び出し
+            .chain(std::iter::once(vm::Command::Call {
+                name: vm::Label::new(&format!(
+                    "{}.{}",
+                    symbol_table.get_class_name(),
+                    subroutine_call.subroutine_name
+                )),
+                args_count: (subroutine_call.subroutine_args.len() + 1) as u16,
+            }))
+            .collect()
+        }
     }
 }
