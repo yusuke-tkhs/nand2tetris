@@ -1,7 +1,6 @@
 mod expression;
 
 use super::symbol_table::SymbolTable;
-use alloc::collections;
 use expression::expression_to_commands;
 use schema::jack::token_analyzer::*;
 use schema::vm;
