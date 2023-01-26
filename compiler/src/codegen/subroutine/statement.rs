@@ -142,6 +142,15 @@ fn do_statement_to_commands(
     do_statement: &DoStatement,
 ) -> Vec<vm::Command> {
     expression::subroutine_call_to_commands(symbol_table, &do_statement.subroutine_call)
+        .into_iter()
+        .chain(std::iter::once(vm::Command::MemoryAccess(
+            vm::MemoryAccessCommand {
+                access_type: vm::AccessType::Pop,
+                segment: vm::Segment::Temp,
+                index: vm::Index::new(0),
+            },
+        )))
+        .collect()
 }
 fn return_statement_to_commands(
     symbol_table: &SymbolTable,
@@ -150,13 +159,13 @@ fn return_statement_to_commands(
     if let Some(expr) = &return_statement.expression {
         // 何らかの値を返す関数の場合
         expression::expression_to_commands(symbol_table, expr)
-        .into_iter()
-        .chain(std::iter::once(vm::Command::Return))
-        .collect()
+            .into_iter()
+            .chain(std::iter::once(vm::Command::Return))
+            .collect()
     } else {
         // void 型関数の場合
         vec![
-            vm::Command::MemoryAccess(vm::MemoryAccessCommand{
+            vm::Command::MemoryAccess(vm::MemoryAccessCommand {
                 access_type: vm::AccessType::Push,
                 segment: vm::Segment::Constant,
                 index: vm::Index::new(0),
