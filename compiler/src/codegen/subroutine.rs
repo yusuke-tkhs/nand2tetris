@@ -15,6 +15,11 @@ pub(super) fn constructor_to_commands(
     body: &SubroutineBody,
     // class のSymbolTableを受け取るほうが良さそう
 ) -> Vec<vm::Command> {
+    // TODO
+    // 関数単位のシンボルテーブルはこの関数の外側で作るようにして、
+    // この関数は外側で作成されたシンボルテーブルを受け取るようにする
+    // そうすると、コンストラクタ、メソッド、ファンクションに書いてある
+    // シンボルテーブル生成を共通化できる
     let symbol_table = SymbolTable::empty();
     let mut label_publishers = LabelPublishers::new(funcion_name);
 
