@@ -1,4 +1,4 @@
-use crate::codegen::subroutine::symbol_table::SymbolTable;
+use crate::codegen::symbol_table::SymbolTable;
 use schema::jack::token_analyzer::*;
 use schema::vm;
 
@@ -6,12 +6,13 @@ use schema::vm;
 // なお式中の二項演算子は、問答無用で左から評価する
 pub(super) fn expression_to_commands(
     symbol_table: &SymbolTable,
+    class_name: &str,
     expression: &Expression,
 ) -> Vec<vm::Command> {
-    term_to_commands(symbol_table, &expression.term)
+    term_to_commands(symbol_table, class_name, &expression.term)
         .into_iter()
         .chain(expression.subsequent_terms.iter().flat_map(|(op, term)| {
-            term_to_commands(symbol_table, term)
+            term_to_commands(symbol_table, class_name, term)
                 .into_iter()
                 .chain(binary_op_to_commands(op))
         }))
@@ -56,7 +57,7 @@ fn unary_op_to_commands(op: &UnaryOperator) -> Vec<vm::Command> {
     }
 }
 
-fn term_to_commands(symbol_table: &SymbolTable, term: &Term) -> Vec<vm::Command> {
+fn term_to_commands(symbol_table: &SymbolTable, class_name: &str, term: &Term) -> Vec<vm::Command> {
     match term {
         Term::IntegerConstant(v) => vec![vm::Command::MemoryAccess(vm::MemoryAccessCommand {
             access_type: vm::AccessType::Push,
@@ -123,7 +124,7 @@ fn term_to_commands(symbol_table: &SymbolTable, term: &Term) -> Vec<vm::Command>
         // pop pointer 1
         // push that 0
         {
-            super::set_array_address(symbol_table, ident, index_expr)
+            super::set_array_address(symbol_table, class_name, ident, index_expr)
                 .into_iter()
                 .chain(std::iter::once(vm::Command::MemoryAccess(
                     vm::MemoryAccessCommand {
@@ -135,10 +136,10 @@ fn term_to_commands(symbol_table: &SymbolTable, term: &Term) -> Vec<vm::Command>
                 .collect()
         }
         Term::SubroutineCall(subroutine_call) => {
-            subroutine_call_to_commands(symbol_table, subroutine_call)
+            subroutine_call_to_commands(symbol_table, class_name, subroutine_call)
         }
-        Term::RoundBraketedExpr(expr) => expression_to_commands(symbol_table, expr),
-        Term::UnaryOperatedExpr(unary_op, term) => term_to_commands(symbol_table, term)
+        Term::RoundBraketedExpr(expr) => expression_to_commands(symbol_table, class_name, expr),
+        Term::UnaryOperatedExpr(unary_op, term) => term_to_commands(symbol_table, class_name, term)
             .into_iter()
             .chain(unary_op_to_commands(unary_op))
             .collect(),
@@ -147,6 +148,7 @@ fn term_to_commands(symbol_table: &SymbolTable, term: &Term) -> Vec<vm::Command>
 
 pub(super) fn subroutine_call_to_commands(
     symbol_table: &SymbolTable,
+    class_name: &str,
     subroutine_call: &SubroutineCall,
 ) -> Vec<vm::Command> {
     match &subroutine_call.subroutine_holder_name {
@@ -162,7 +164,7 @@ pub(super) fn subroutine_call_to_commands(
                         subroutine_call
                             .subroutine_args
                             .iter()
-                            .flat_map(|arg| expression_to_commands(symbol_table, arg)),
+                            .flat_map(|arg| expression_to_commands(symbol_table, class_name, arg)),
                     )
                     // サブルーチン呼び出し
                     .chain(std::iter::once(vm::Command::Call {
@@ -182,7 +184,7 @@ pub(super) fn subroutine_call_to_commands(
                 subroutine_call
                     .subroutine_args
                     .iter()
-                    .flat_map(|arg| expression_to_commands(symbol_table, arg))
+                    .flat_map(|arg| expression_to_commands(symbol_table, class_name, arg))
                     // サブルーチン呼び出し
                     .chain(std::iter::once(vm::Command::Call {
                         name: vm::Label::new(&format!(
@@ -207,7 +209,7 @@ pub(super) fn subroutine_call_to_commands(
                 subroutine_call
                     .subroutine_args
                     .iter()
-                    .flat_map(|arg| expression_to_commands(symbol_table, arg)),
+                    .flat_map(|arg| expression_to_commands(symbol_table, class_name, arg)),
             )
             // サブルーチン呼び出し
             .chain(std::iter::once(vm::Command::Call {

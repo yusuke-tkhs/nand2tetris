@@ -11,6 +11,17 @@ pub enum TypeDecleration {
     ClassName(String),
 }
 
+impl TypeDecleration {
+    pub fn to_type_name(&self) -> String {
+        match self {
+            TypeDecleration::Boolean => "bool".to_string(),
+            TypeDecleration::Int => "int".to_string(),
+            TypeDecleration::Char => "char".to_string(),
+            TypeDecleration::ClassName(name) => name.clone(),
+        }
+    }
+}
+
 parser! {
     pub(crate) fn type_decleration[Input]()(Input) -> TypeDecleration
     where [Input: Stream<Token = Token>]

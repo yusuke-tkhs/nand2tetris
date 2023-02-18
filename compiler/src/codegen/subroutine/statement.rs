@@ -1,6 +1,6 @@
 mod expression;
 
-use super::symbol_table::SymbolTable;
+use crate::codegen::symbol_table::SymbolTable;
 use expression::expression_to_commands;
 use schema::jack::token_analyzer::*;
 use schema::vm;
@@ -8,25 +8,31 @@ use schema::vm;
 pub(super) fn statement_to_commands(
     symbol_table: &SymbolTable,
     label_publishers: &mut LabelPublishers,
+    class_name: &str,
     statement: &Statement,
 ) -> Vec<vm::Command> {
     match statement {
-        Statement::Let(let_statement) => let_statement_to_commands(symbol_table, let_statement),
+        Statement::Let(let_statement) => {
+            let_statement_to_commands(symbol_table, class_name, let_statement)
+        }
         Statement::If(if_statement) => {
-            if_statement_to_commands(symbol_table, label_publishers, if_statement)
+            if_statement_to_commands(symbol_table, label_publishers, class_name, if_statement)
         }
         Statement::While(while_statement) => {
-            while_statement_to_commands(symbol_table, label_publishers, while_statement)
+            while_statement_to_commands(symbol_table, label_publishers, class_name, while_statement)
         }
-        Statement::Do(do_statement) => do_statement_to_commands(symbol_table, do_statement),
+        Statement::Do(do_statement) => {
+            do_statement_to_commands(symbol_table, class_name, do_statement)
+        }
         Statement::Return(return_statement) => {
-            return_statement_to_commands(symbol_table, return_statement)
+            return_statement_to_commands(symbol_table, class_name, return_statement)
         }
     }
 }
 
 fn let_statement_to_commands(
     symbol_table: &SymbolTable,
+    class_name: &str,
     statement: &LetStatement,
 ) -> Vec<vm::Command> {
     if let Some(index_expr) = &statement.target_index {
@@ -40,9 +46,9 @@ fn let_statement_to_commands(
         // pop pointer 1
         // push value
         // pop that 0
-        set_array_address(symbol_table, &statement.target_name, index_expr)
+        set_array_address(symbol_table, class_name, &statement.target_name, index_expr)
             .into_iter()
-            .chain(expression_to_commands(symbol_table, index_expr))
+            .chain(expression_to_commands(symbol_table, class_name, index_expr))
             .chain(std::iter::once(vm::Command::MemoryAccess(
                 vm::MemoryAccessCommand {
                     access_type: vm::AccessType::Pop,
@@ -58,7 +64,7 @@ fn let_statement_to_commands(
         // pesudo vm:
         // push value
         // pop a
-        expression_to_commands(symbol_table, &statement.source)
+        expression_to_commands(symbol_table, class_name, &statement.source)
             .into_iter()
             .chain(std::iter::once(
                 symbol_table.pop_command(&statement.target_name),
@@ -70,17 +76,20 @@ fn let_statement_to_commands(
 fn if_statement_to_commands(
     symbol_table: &SymbolTable,
     label_publishers: &mut LabelPublishers,
+    class_name: &str,
     statement: &IfStatement,
 ) -> Vec<vm::Command> {
     let (if_label_1, if_label_2) = label_publishers.if_publisher().publish();
     let if_statement_commands: Vec<_> = statement
         .if_statements
         .iter()
-        .flat_map(|statement| statement_to_commands(symbol_table, label_publishers, statement))
+        .flat_map(|statement| {
+            statement_to_commands(symbol_table, label_publishers, class_name, statement)
+        })
         .collect();
     if let Some(else_statements) = &statement.else_statements {
         // if 句と else 句の両方が存在する場合
-        expression_to_commands(symbol_table, &statement.condition)
+        expression_to_commands(symbol_table, class_name, &statement.condition)
             .into_iter()
             .chain([
                 vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
@@ -92,13 +101,13 @@ fn if_statement_to_commands(
                 vm::Command::Label(if_label_1),
             ])
             .chain(else_statements.iter().flat_map(|statement| {
-                statement_to_commands(symbol_table, label_publishers, statement)
+                statement_to_commands(symbol_table, label_publishers, class_name, statement)
             }))
             .chain(std::iter::once(vm::Command::Label(if_label_2)))
             .collect()
     } else {
         // if 句のみの場合
-        expression_to_commands(symbol_table, &statement.condition)
+        expression_to_commands(symbol_table, class_name, &statement.condition)
             .into_iter()
             .chain([
                 vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
@@ -113,12 +122,14 @@ fn if_statement_to_commands(
 fn while_statement_to_commands(
     symbol_table: &SymbolTable,
     label_publishers: &mut LabelPublishers,
+    class_name: &str,
     while_statement: &WhileStatement,
 ) -> Vec<vm::Command> {
     let (if_label_1, if_label_2) = label_publishers.while_publisher().publish();
     std::iter::once(vm::Command::Label(if_label_1.clone()))
         .chain(expression_to_commands(
             symbol_table,
+            class_name,
             &while_statement.condition,
         ))
         .into_iter()
@@ -126,11 +137,9 @@ fn while_statement_to_commands(
             vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
             vm::Command::IfGoto(if_label_2.clone()),
         ])
-        .chain(
-            while_statement.statements.iter().flat_map(|statement| {
-                statement_to_commands(symbol_table, label_publishers, statement)
-            }),
-        )
+        .chain(while_statement.statements.iter().flat_map(|statement| {
+            statement_to_commands(symbol_table, label_publishers, class_name, statement)
+        }))
         .chain([
             vm::Command::Goto(if_label_1),
             vm::Command::Label(if_label_2),
@@ -139,9 +148,10 @@ fn while_statement_to_commands(
 }
 fn do_statement_to_commands(
     symbol_table: &SymbolTable,
+    class_name: &str,
     do_statement: &DoStatement,
 ) -> Vec<vm::Command> {
-    expression::subroutine_call_to_commands(symbol_table, &do_statement.subroutine_call)
+    expression::subroutine_call_to_commands(symbol_table, class_name, &do_statement.subroutine_call)
         .into_iter()
         .chain(std::iter::once(vm::Command::MemoryAccess(
             vm::MemoryAccessCommand {
@@ -154,11 +164,12 @@ fn do_statement_to_commands(
 }
 fn return_statement_to_commands(
     symbol_table: &SymbolTable,
+    class_name: &str,
     return_statement: &ReturnStatement,
 ) -> Vec<vm::Command> {
     if let Some(expr) = &return_statement.expression {
         // 何らかの値を返す関数の場合
-        expression::expression_to_commands(symbol_table, expr)
+        expression::expression_to_commands(symbol_table, class_name, expr)
             .into_iter()
             .chain(std::iter::once(vm::Command::Return))
             .collect()
@@ -179,6 +190,7 @@ fn return_statement_to_commands(
 // 仮想 that セグメントに格納する vm コマンドを生成する
 fn set_array_address(
     symbol_table: &SymbolTable,
+    class_name: &str,
     array_ident: &str,
     index_expr: &Expression,
 ) -> Vec<vm::Command> {
@@ -192,7 +204,7 @@ fn set_array_address(
     symbol_table
         .push_command(array_ident)
         .into_iter()
-        .chain(expression_to_commands(symbol_table, index_expr))
+        .chain(expression_to_commands(symbol_table, class_name, index_expr))
         .chain([
             vm::Command::Arithmetic(vm::ArithmeticCommand::Add),
             vm::Command::MemoryAccess(vm::MemoryAccessCommand {

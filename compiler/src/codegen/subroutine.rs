@@ -1,26 +1,17 @@
 mod statement;
-mod symbol_table;
 
+use crate::codegen::symbol_table::SymbolTable;
 use schema::jack::token_analyzer::*;
 use schema::vm;
 use statement::LabelPublishers;
-use symbol_table::SymbolTable;
 
 pub(super) fn constructor_to_commands(
+    symbol_table: &SymbolTable,
     class_name: &str,
     funcion_name: &str,
     number_of_fields: usize,
-    _return_type: &ClassSubroutineReturnType, // 型チェック省略する場合、実は使わない？
-    _parameters: &[ClassSubroutineParameter], // シンボルテーブル構築で使うはず
     body: &SubroutineBody,
-    // class のSymbolTableを受け取るほうが良さそう
 ) -> Vec<vm::Command> {
-    // TODO
-    // 関数単位のシンボルテーブルはこの関数の外側で作るようにして、
-    // この関数は外側で作成されたシンボルテーブルを受け取るようにする
-    // そうすると、コンストラクタ、メソッド、ファンクションに書いてある
-    // シンボルテーブル生成を共通化できる
-    let symbol_table = SymbolTable::empty();
     let mut label_publishers = LabelPublishers::new(funcion_name);
 
     // function class_name.function_name n
@@ -48,19 +39,22 @@ pub(super) fn constructor_to_commands(
         }),
     ])
     .chain(body.statements.iter().flat_map(|statement| {
-        statement::statement_to_commands(&symbol_table, &mut label_publishers, statement)
+        statement::statement_to_commands(
+            &symbol_table,
+            &mut label_publishers,
+            class_name,
+            statement,
+        )
     }))
     .collect()
 }
 
 pub(super) fn function_to_commands(
+    symbol_table: &SymbolTable,
     class_name: &str,
     funcion_name: &str,
-    _return_type: &ClassSubroutineReturnType,
-    _parameters: &[ClassSubroutineParameter],
     body: &SubroutineBody,
 ) -> Vec<vm::Command> {
-    let symbol_table = SymbolTable::empty();
     let mut label_publishers = LabelPublishers::new(funcion_name);
 
     // function class_name.function_name n
@@ -69,19 +63,22 @@ pub(super) fn function_to_commands(
         local_variable_count: body.variable_declerations.len() as u16,
     })
     .chain(body.statements.iter().flat_map(|statement| {
-        statement::statement_to_commands(&symbol_table, &mut label_publishers, statement)
+        statement::statement_to_commands(
+            &symbol_table,
+            &mut label_publishers,
+            class_name,
+            statement,
+        )
     }))
     .collect()
 }
 
 pub(super) fn method_to_commands(
+    symbol_table: &SymbolTable,
     class_name: &str,
     funcion_name: &str,
-    return_type: &ClassSubroutineReturnType,
-    parameters: &[ClassSubroutineParameter],
     body: &SubroutineBody,
 ) -> Vec<vm::Command> {
-    let symbol_table = SymbolTable::empty();
     let mut label_publishers = LabelPublishers::new(funcion_name);
 
     // function class_name.function_name n
@@ -103,7 +100,12 @@ pub(super) fn method_to_commands(
         }),
     ])
     .chain(body.statements.iter().flat_map(|statement| {
-        statement::statement_to_commands(&symbol_table, &mut label_publishers, statement)
+        statement::statement_to_commands(
+            &symbol_table,
+            &mut label_publishers,
+            class_name,
+            statement,
+        )
     }))
     .collect()
 }
