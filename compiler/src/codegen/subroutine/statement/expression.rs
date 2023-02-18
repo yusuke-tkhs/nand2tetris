@@ -215,7 +215,7 @@ pub(super) fn subroutine_call_to_commands(
             .chain(std::iter::once(vm::Command::Call {
                 name: vm::Label::new(&format!(
                     "{}.{}",
-                    symbol_table.get_class_name(),
+                    class_name,
                     subroutine_call.subroutine_name
                 )),
                 args_count: (subroutine_call.subroutine_args.len() + 1) as u16,

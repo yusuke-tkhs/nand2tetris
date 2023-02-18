@@ -100,9 +100,6 @@ impl SymbolTable {
     pub(super) fn get_type_name(&self, symbol: &str) -> String {
         self.0.get(symbol).unwrap().symbol_type.to_type_name()
     }
-    pub(super) fn get_class_name(&self) -> String {
-        unimplemented!()
-    }
     // クラスのフィールドなどthis pointer 経由のコマンドになる場合も想定する
     // 戻り値をVecにしないといけないかも？
     pub(super) fn push_command(&self, symbol: &str) -> Vec<vm::Command> {
