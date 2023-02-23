@@ -1,5 +1,6 @@
 mod parser;
 
+use crate::parser::parsable_enum;
 pub use parser::parse;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -35,23 +36,27 @@ impl Label {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ArithmeticCommand {
-    Add,
-    Sub,
-    Neg,
-    Eq,
-    Gt,
-    Lt,
-    And,
-    Or,
-    Not,
+parsable_enum! {
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum ArithmeticCommand {
+        Add: "add",
+        Sub: "sub",
+        Neg: "neg",
+        Eq: "eq",
+        Gt: "gt",
+        Lt: "lt",
+        And: "and",
+        Or: "or",
+        Not: "not",
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum AccessType {
-    Push,
-    Pop,
+parsable_enum! {
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum AccessType {
+        Push: "push",
+        Pop: "pop",
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -61,17 +66,20 @@ pub struct MemoryAccessCommand {
     pub index: Index,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Segment {
-    Argument,
-    Local,
-    Static,
-    Constant,
-    This,
-    That,
-    Pointer,
-    Temp,
+parsable_enum! {
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Segment {
+        Argument: "argument",
+        Local: "local",
+        Static: "static",
+        Constant: "constant",
+        This: "this",
+        That: "that",
+        Pointer: "pointer",
+        Temp: "temp",
+    }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Index(u16);
 impl Index {

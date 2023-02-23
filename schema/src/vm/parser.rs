@@ -28,8 +28,11 @@ parser! {
     fn command[Input]()(Input) -> Command
     where [Input: Stream<Token = char>]
     {
+        // choice((
+        //     ArithmeticCommand::parser().map(Command::Arithmetic),
+        // ))
         choice((
-            attempt(arithmetic_command().map(Command::Arithmetic)),
+            ArithmeticCommand::parser().map(Command::Arithmetic),
             attempt(memory_access_command().map(Command::MemoryAccess)),
             attempt(function_command()),
             attempt(call_command()),
@@ -108,63 +111,17 @@ parser! {
 }
 
 parser! {
-    fn arithmetic_command[Input]()(Input) -> ArithmeticCommand
-    where [Input: Stream<Token = char>]
-    {
-        choice((
-            attempt(string("add").with(value(ArithmeticCommand::Add))),
-            attempt(string("sub").with(value(ArithmeticCommand::Sub))),
-            attempt(string("neg").with(value(ArithmeticCommand::Neg))),
-            attempt(string("eq").with(value(ArithmeticCommand::Eq))),
-            attempt(string("gt").with(value(ArithmeticCommand::Gt))),
-            attempt(string("lt").with(value(ArithmeticCommand::Lt))),
-            attempt(string("and").with(value(ArithmeticCommand::And))),
-            attempt(string("or").with(value(ArithmeticCommand::Or))),
-            attempt(string("not").with(value(ArithmeticCommand::Not))),
-        ))
-    }
-}
-
-parser! {
     fn memory_access_command[Input]()(Input) -> MemoryAccessCommand
     where [Input: Stream<Token = char>]
     {
-        access_type()
+        AccessType::parser()
         .skip(space())
-        .and(segment().skip(space()).and(index()))
+        .and(Segment::parser().skip(space()).and(index()))
         .map(|(access_type, (segment, index))| MemoryAccessCommand {
             access_type,
             segment,
             index,
         })
-    }
-}
-
-parser! {
-    fn access_type[Input]()(Input) -> AccessType
-    where [Input: Stream<Token = char>]
-    {
-        choice((
-            attempt(string("push").with(value(AccessType::Push))),
-            attempt(string("pop").with(value(AccessType::Pop))),
-        ))
-    }
-}
-
-parser! {
-    fn segment[Input]()(Input) -> Segment
-    where [Input: Stream<Token = char>]
-    {
-        choice((
-            attempt(string("argument").with(value(Segment::Argument))),
-            attempt(string("local").with(value(Segment::Local))),
-            attempt(string("static").with(value(Segment::Static))),
-            attempt(string("constant").with(value(Segment::Constant))),
-            attempt(string("this").with(value(Segment::This))),
-            attempt(string("that").with(value(Segment::That))),
-            attempt(string("pointer").with(value(Segment::Pointer))),
-            attempt(string("temp").with(value(Segment::Temp))),
-        ))
     }
 }
 
@@ -222,15 +179,15 @@ mod tests {
 
     #[test]
     fn parse_arithmetic_command() {
-        easy_parser_assert(arithmetic_command, "add", ArithmeticCommand::Add);
-        easy_parser_assert(arithmetic_command, "sub", ArithmeticCommand::Sub);
-        easy_parser_assert(arithmetic_command, "neg", ArithmeticCommand::Neg);
-        easy_parser_assert(arithmetic_command, "eq", ArithmeticCommand::Eq);
-        easy_parser_assert(arithmetic_command, "gt", ArithmeticCommand::Gt);
-        easy_parser_assert(arithmetic_command, "lt", ArithmeticCommand::Lt);
-        easy_parser_assert(arithmetic_command, "and", ArithmeticCommand::And);
-        easy_parser_assert(arithmetic_command, "or", ArithmeticCommand::Or);
-        easy_parser_assert(arithmetic_command, "not", ArithmeticCommand::Not);
+        easy_parser_assert(ArithmeticCommand::parser, "add", ArithmeticCommand::Add);
+        easy_parser_assert(ArithmeticCommand::parser, "sub", ArithmeticCommand::Sub);
+        easy_parser_assert(ArithmeticCommand::parser, "neg", ArithmeticCommand::Neg);
+        easy_parser_assert(ArithmeticCommand::parser, "eq", ArithmeticCommand::Eq);
+        easy_parser_assert(ArithmeticCommand::parser, "gt", ArithmeticCommand::Gt);
+        easy_parser_assert(ArithmeticCommand::parser, "lt", ArithmeticCommand::Lt);
+        easy_parser_assert(ArithmeticCommand::parser, "and", ArithmeticCommand::And);
+        easy_parser_assert(ArithmeticCommand::parser, "or", ArithmeticCommand::Or);
+        easy_parser_assert(ArithmeticCommand::parser, "not", ArithmeticCommand::Not);
     }
 
     #[test]
@@ -257,20 +214,20 @@ mod tests {
 
     #[test]
     fn parse_access_type() {
-        easy_parser_assert(access_type, "push", AccessType::Push);
-        easy_parser_assert(access_type, "pop", AccessType::Pop);
+        easy_parser_assert(AccessType::parser, "push", AccessType::Push);
+        easy_parser_assert(AccessType::parser, "pop", AccessType::Pop);
     }
 
     #[test]
     fn parse_segment() {
-        easy_parser_assert(segment, "argument", Segment::Argument);
-        easy_parser_assert(segment, "local", Segment::Local);
-        easy_parser_assert(segment, "static", Segment::Static);
-        easy_parser_assert(segment, "constant", Segment::Constant);
-        easy_parser_assert(segment, "this", Segment::This);
-        easy_parser_assert(segment, "that", Segment::That);
-        easy_parser_assert(segment, "pointer", Segment::Pointer);
-        easy_parser_assert(segment, "temp", Segment::Temp);
+        easy_parser_assert(Segment::parser, "argument", Segment::Argument);
+        easy_parser_assert(Segment::parser, "local", Segment::Local);
+        easy_parser_assert(Segment::parser, "static", Segment::Static);
+        easy_parser_assert(Segment::parser, "constant", Segment::Constant);
+        easy_parser_assert(Segment::parser, "this", Segment::This);
+        easy_parser_assert(Segment::parser, "that", Segment::That);
+        easy_parser_assert(Segment::parser, "pointer", Segment::Pointer);
+        easy_parser_assert(Segment::parser, "temp", Segment::Temp);
     }
 
     #[test]

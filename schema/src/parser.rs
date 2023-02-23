@@ -26,11 +26,12 @@ macro_rules! parsable_enum{
         }
         impl $enum_name {
             $enum_vis fn parser<Input>() -> impl combine::Parser<Input, Output = $enum_name>
-            where Input: Stream<Token = char>
+            where Input: combine::Stream<Token = char>
             {
+                use combine::{parser, choice, attempt, parser::char::string, value};
                 parser! {
                     fn inner_fn[Input]()(Input) -> $enum_name
-                    where [Input: Stream<Token = char>]
+                    where [Input: combine::Stream<Token = char>]
                     {
                         choice([
                             $(attempt(string($case_string).with(value($enum_name::$case_name)))),+

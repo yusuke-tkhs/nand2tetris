@@ -1,5 +1,6 @@
 mod subroutine;
 mod symbol_table;
+use itertools::Itertools;
 use schema::jack::token_analyzer::*;
 use schema::vm;
 use symbol_table::SymbolTable;
@@ -9,7 +10,7 @@ pub fn class_to_commands(class: &Class) -> Vec<vm::Command> {
         .subroutine_declerations
         .iter()
         .flat_map(|subroutine_dec| {
-            let subroutine_symbol_table = symbol_table.with_subroutine(&subroutine_dec);
+            let subroutine_symbol_table = symbol_table.with_subroutine(subroutine_dec);
             match subroutine_dec.decleration_type {
                 ClassSubroutineType::Constructor => subroutine::constructor_to_commands(
                     &subroutine_symbol_table,
@@ -41,6 +42,33 @@ pub fn class_to_commands(class: &Class) -> Vec<vm::Command> {
         .collect()
 }
 
-pub fn commands_to_code(_commands: &[vm::Command]) -> String {
-    unimplemented!()
+pub fn commands_to_code(commands: &[vm::Command]) -> String {
+    commands
+        .iter()
+        .map(command_to_code)
+        .collect_vec()
+        .join("\n")
+}
+
+fn command_to_code(command: &vm::Command) -> String {
+    match command {
+        vm::Command::Arithmetic(command) => command.as_str().to_string(),
+        vm::Command::MemoryAccess(command) => {
+            format!(
+                "{} {} {}",
+                command.access_type.as_str(),
+                command.segment.as_str(),
+                command.index.get()
+            )
+        }
+        vm::Command::Function {
+            name,
+            local_variable_count,
+        } => format!("function {} {}", name.get(), local_variable_count),
+        vm::Command::Call { name, args_count } => format!("call {} {}", name.get(), args_count),
+        vm::Command::Return => "return".to_string(),
+        vm::Command::Label(label) => format!("label {}", label.get()),
+        vm::Command::Goto(label) => format!("goto {}", label.get()),
+        vm::Command::IfGoto(label) => format!("if-goto {}", label.get()),
+    }
 }

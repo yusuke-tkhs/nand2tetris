@@ -4,12 +4,12 @@ use crate::{
 };
 
 use combine::{
-    attempt, between, choice, optional, parser,
+    between, choice, optional, parser,
     parser::{
-        char::{space, string},
+        char::space,
         repeat::{many, many1},
     },
-    satisfy, value, Stream,
+    satisfy, Stream,
 };
 
 pub fn tokenize(code: String) -> anyhow::Result<Vec<Token>> {
