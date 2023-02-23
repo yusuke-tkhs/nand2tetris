@@ -39,12 +39,7 @@ pub(super) fn constructor_to_commands(
         }),
     ])
     .chain(body.statements.iter().flat_map(|statement| {
-        statement::statement_to_commands(
-            &symbol_table,
-            &mut label_publishers,
-            class_name,
-            statement,
-        )
+        statement::statement_to_commands(symbol_table, &mut label_publishers, class_name, statement)
     }))
     .collect()
 }
@@ -63,12 +58,7 @@ pub(super) fn function_to_commands(
         local_variable_count: body.variable_declerations.len() as u16,
     })
     .chain(body.statements.iter().flat_map(|statement| {
-        statement::statement_to_commands(
-            &symbol_table,
-            &mut label_publishers,
-            class_name,
-            statement,
-        )
+        statement::statement_to_commands(symbol_table, &mut label_publishers, class_name, statement)
     }))
     .collect()
 }
@@ -100,12 +90,7 @@ pub(super) fn method_to_commands(
         }),
     ])
     .chain(body.statements.iter().flat_map(|statement| {
-        statement::statement_to_commands(
-            &symbol_table,
-            &mut label_publishers,
-            class_name,
-            statement,
-        )
+        statement::statement_to_commands(symbol_table, &mut label_publishers, class_name, statement)
     }))
     .collect()
 }

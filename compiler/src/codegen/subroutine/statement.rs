@@ -201,9 +201,7 @@ fn set_array_address(
     // push index
     // add
     // pop pointer 1
-    symbol_table
-        .push_command(array_ident)
-        .into_iter()
+    std::iter::once(symbol_table.push_command(array_ident))
         .chain(expression_to_commands(symbol_table, class_name, index_expr))
         .chain([
             vm::Command::Arithmetic(vm::ArithmeticCommand::Add),

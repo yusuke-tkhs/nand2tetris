@@ -36,10 +36,6 @@ pub(super) struct SymbolTableRecord {
 }
 
 impl SymbolTable {
-    pub(super) fn empty() -> Self {
-        Self(Default::default())
-    }
-
     pub(super) fn new(var_decs: &[ClassVariableDecleration]) -> Self {
         let mut static_index: u16 = 0;
         let mut this_index: u16 = 0;
@@ -65,20 +61,18 @@ impl SymbolTable {
     }
 
     pub(super) fn with_subroutine(&self, subroutine_dec: &ClassSubroutineDecleration) -> Self {
-        let mut arg_index: u16 = 0;
-        let mut local_index: u16 = 0;
         let mut table: HashMap<String, SymbolTableRecord> = self.0.clone();
-        for parameter in &subroutine_dec.parameters {
+        for (arg_index, parameter) in subroutine_dec.parameters.iter().enumerate() {
             let record = SymbolTableRecord {
                 symbol_type: parameter.parameter_type.clone(),
                 mapping: MemorySegmentMapping {
                     segment: SymbolTableSegment::Argument,
-                    index: arg_index,
+                    index: arg_index as u16,
                 },
             };
-            arg_index += 1;
             table.insert(parameter.name.clone(), record);
         }
+        let mut local_index: u16 = 0;
         for var_dec in &subroutine_dec.body.variable_declerations {
             for var_name in &var_dec.names {
                 let record = SymbolTableRecord {
@@ -102,12 +96,22 @@ impl SymbolTable {
     }
     // クラスのフィールドなどthis pointer 経由のコマンドになる場合も想定する
     // 戻り値をVecにしないといけないかも？
-    pub(super) fn push_command(&self, symbol: &str) -> Vec<vm::Command> {
-        unimplemented!()
+    pub(super) fn push_command(&self, symbol: &str) -> vm::Command {
+        let record = self.0.get(symbol).unwrap();
+        mapping_to_command(vm::AccessType::Push, &record.mapping)
     }
     pub(super) fn pop_command(&self, symbol: &str) -> vm::Command {
-        unimplemented!()
+        let record = self.0.get(symbol).unwrap();
+        mapping_to_command(vm::AccessType::Pop, &record.mapping)
     }
+}
+
+fn mapping_to_command(access_type: vm::AccessType, mapping: &MemorySegmentMapping) -> vm::Command {
+    vm::Command::MemoryAccess(vm::MemoryAccessCommand {
+        access_type,
+        segment: mapping.segment.vm_segment(),
+        index: vm::Index::new(mapping.index),
+    })
 }
 
 #[derive(Clone)]
@@ -125,7 +129,7 @@ pub(super) enum SymbolTableSegment {
 }
 
 impl SymbolTableSegment {
-    fn to_vm_segment(&self) -> vm::Segment {
+    fn vm_segment(&self) -> vm::Segment {
         match self {
             Self::Static => vm::Segment::Static,
             Self::This => vm::Segment::This,

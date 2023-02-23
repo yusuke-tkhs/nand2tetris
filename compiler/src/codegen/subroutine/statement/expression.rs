@@ -112,7 +112,7 @@ fn term_to_commands(symbol_table: &SymbolTable, class_name: &str, term: &Term) -
                 ],
             }
         }
-        Term::Identifier(ident) => symbol_table.push_command(ident),
+        Term::Identifier(ident) => vec![symbol_table.push_command(ident)],
         Term::ArrayIdentifier(ident, index_expr) =>
         // 配列要素の参照
         // jack:
@@ -157,9 +157,7 @@ pub(super) fn subroutine_call_to_commands(
                 // オブジェクトのメソッドを呼び出す場合
 
                 // 引数をスタックにPush
-                symbol_table
-                    .push_command(holder_name)
-                    .into_iter()
+                std::iter::once(symbol_table.push_command(holder_name))
                     .chain(
                         subroutine_call
                             .subroutine_args
@@ -215,8 +213,7 @@ pub(super) fn subroutine_call_to_commands(
             .chain(std::iter::once(vm::Command::Call {
                 name: vm::Label::new(&format!(
                     "{}.{}",
-                    class_name,
-                    subroutine_call.subroutine_name
+                    class_name, subroutine_call.subroutine_name
                 )),
                 args_count: (subroutine_call.subroutine_args.len() + 1) as u16,
             }))
