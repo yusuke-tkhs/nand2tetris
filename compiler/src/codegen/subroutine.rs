@@ -17,7 +17,7 @@ pub(super) fn constructor_to_commands(
     // function class_name.function_name n
     std::iter::once(vm::Command::Function {
         name: vm::Label::new(&format!("{}.{}", class_name, funcion_name)),
-        local_variable_count: body.variable_declerations.len() as u16,
+        local_variable_count: count_local_vars(&body.variable_declerations) as u16,
     })
     .chain([
         // push object size to stack
@@ -55,7 +55,7 @@ pub(super) fn function_to_commands(
     // function class_name.function_name n
     std::iter::once(vm::Command::Function {
         name: vm::Label::new(&format!("{}.{}", class_name, funcion_name)),
-        local_variable_count: body.variable_declerations.len() as u16,
+        local_variable_count: count_local_vars(&body.variable_declerations) as u16,
     })
     .chain(body.statements.iter().flat_map(|statement| {
         statement::statement_to_commands(symbol_table, &mut label_publishers, class_name, statement)
@@ -93,4 +93,11 @@ pub(super) fn method_to_commands(
         statement::statement_to_commands(symbol_table, &mut label_publishers, class_name, statement)
     }))
     .collect()
+}
+
+fn count_local_vars(variable_declerations: &[SubroutineVariableDecleration]) -> usize {
+    variable_declerations
+        .iter()
+        .map(|dec| dec.names.len())
+        .sum()
 }

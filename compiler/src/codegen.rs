@@ -19,10 +19,11 @@ pub fn class_to_commands(class: &Class) -> Vec<vm::Command> {
                     class
                         .variable_declearations
                         .iter()
-                        .filter(|var_dec| {
-                            matches!(var_dec.decleration_type, ClassVariableType::Field)
+                        .filter_map(|var_dec| match var_dec.decleration_type {
+                            ClassVariableType::Field => Some(var_dec.var_names.len()),
+                            _ => None,
                         })
-                        .count(),
+                        .sum(),
                     &subroutine_dec.body,
                 ),
                 ClassSubroutineType::Function => subroutine::function_to_commands(
