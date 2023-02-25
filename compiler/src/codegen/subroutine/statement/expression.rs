@@ -39,21 +39,10 @@ fn binary_op_to_commands(op: &BinaryOperator) -> Vec<vm::Command> {
     }
 }
 
-fn unary_op_to_commands(op: &UnaryOperator) -> Vec<vm::Command> {
+fn unary_op_to_command(op: &UnaryOperator) -> vm::Command {
     match op {
-        UnaryOperator::Not => vec![vm::Command::Arithmetic(vm::ArithmeticCommand::Neg)],
-        UnaryOperator::Minus => vec![
-            vm::Command::MemoryAccess(vm::MemoryAccessCommand {
-                access_type: vm::AccessType::Push,
-                segment: vm::Segment::Constant,
-                index: vm::Index::new(1),
-            }),
-            vm::Command::Arithmetic(vm::ArithmeticCommand::Neg),
-            vm::Command::Call {
-                name: vm::Label::new("Math.multiply"),
-                args_count: 2,
-            },
-        ],
+        UnaryOperator::Not => vm::Command::Arithmetic(vm::ArithmeticCommand::Not),
+        UnaryOperator::Minus => vm::Command::Arithmetic(vm::ArithmeticCommand::Neg),
     }
 }
 
@@ -141,7 +130,7 @@ fn term_to_commands(symbol_table: &SymbolTable, class_name: &str, term: &Term) -
         Term::RoundBraketedExpr(expr) => expression_to_commands(symbol_table, class_name, expr),
         Term::UnaryOperatedExpr(unary_op, term) => term_to_commands(symbol_table, class_name, term)
             .into_iter()
-            .chain(unary_op_to_commands(unary_op))
+            .chain(std::iter::once(unary_op_to_command(unary_op)))
             .collect(),
     }
 }
