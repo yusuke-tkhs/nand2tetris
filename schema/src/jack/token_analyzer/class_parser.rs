@@ -138,4 +138,88 @@ mod tests {
             },
         )
     }
+
+    #[test]
+    fn parse_complex_function() {
+        // function void main(){ var Array a; let a = array[Class.method(1)]; return;}
+        // TODO これ単体テスト通るがproject11のDebugComplexArrayになると通らない。原因調査する
+        use subroutine_parser::expression_parser::{Expression, SubroutineCall, Term};
+        use subroutine_parser::statement_parser::{LetStatement, ReturnStatement, Statement};
+        use subroutine_parser::SubroutineVariableDecleration;
+        easy_parser_assert_token(
+            class(),
+            &tokens!(
+                keyword: Class,
+                ident: "Main",
+                symbol: WaveBracketStart,
+                keyword: Function,
+                keyword: Void,
+                ident: "main",
+                symbol: RoundBracketStart,
+                symbol: RoundBracketEnd,
+                symbol: WaveBracketStart,
+                keyword: Var,
+                ident: "Array",
+                ident: "a",
+                symbol: SemiColon,
+                keyword: Let,
+                ident: "a",
+                symbol: Equal,
+                ident: "array",
+                symbol: SquareBracketStart,
+                ident: "Class",
+                symbol: Dot,
+                ident: "method",
+                symbol: RoundBracketStart,
+                int_const: 1,
+                symbol: RoundBracketEnd,
+                symbol: SquareBracketEnd,
+                symbol: SemiColon,
+                keyword: Return,
+                symbol: SemiColon,
+                symbol: WaveBracketEnd,
+                symbol: WaveBracketEnd,
+            ),
+            Class {
+                class_name: "Main".to_string(),
+                variable_declearations: vec![],
+                subroutine_declerations: vec![ClassSubroutineDecleration {
+                    name: "main".to_string(),
+                    decleration_type: ClassSubroutineType::Function,
+                    return_type: ClassSubroutineReturnType::Void,
+                    parameters: Default::default(),
+                    body: SubroutineBody {
+                        variable_declerations: vec![SubroutineVariableDecleration {
+                            variable_type: TypeDecleration::ClassName("Array".to_string()),
+                            names: vec!["a".to_string()],
+                        }],
+                        statements: vec![
+                            Statement::Let(LetStatement {
+                                source: Expression {
+                                    term: Term::ArrayIdentifier(
+                                        "array".to_string(),
+                                        Box::new(Expression {
+                                            term: Term::SubroutineCall(SubroutineCall {
+                                                subroutine_holder_name: Some("Class".to_string()),
+                                                subroutine_name: "method".to_string(),
+                                                subroutine_args: vec![Expression {
+                                                    term: Term::IntegerConstant(1),
+                                                    subsequent_terms: Default::default(),
+                                                }],
+                                            }),
+                                            subsequent_terms: Default::default(),
+                                        }),
+                                    ),
+                                    subsequent_terms: Default::default(),
+                                },
+                                target_name: "a".to_string(),
+                                target_index: None,
+                            }),
+                            Statement::Return(ReturnStatement { expression: None }),
+                        ],
+                    },
+                }],
+            },
+        );
+    }
 }
