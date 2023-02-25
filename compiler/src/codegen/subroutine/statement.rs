@@ -48,7 +48,11 @@ fn let_statement_to_commands(
         // pop that 0
         set_array_address(symbol_table, class_name, &statement.target_name, index_expr)
             .into_iter()
-            .chain(expression_to_commands(symbol_table, class_name, index_expr))
+            .chain(expression_to_commands(
+                symbol_table,
+                class_name,
+                &statement.source,
+            ))
             .chain(std::iter::once(vm::Command::MemoryAccess(
                 vm::MemoryAccessCommand {
                     access_type: vm::AccessType::Pop,
