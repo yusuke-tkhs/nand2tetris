@@ -406,6 +406,7 @@ mod tests {
     #[test]
     fn parse_complex_let_statement() {
         // let a = array[Class.method(1)];
+        // TODO これ単体テスト通るがproject11のDebugComplexArrayになると通らない。原因調査する
         easy_parser_assert_token(
             let_statement(),
             &tokens!(
