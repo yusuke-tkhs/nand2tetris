@@ -1,5 +1,6 @@
 use schema::jack::token_analyzer::{
-    ClassSubroutineDecleration, ClassVariableDecleration, ClassVariableType, TypeDecleration,
+    ClassSubroutineDecleration, ClassSubroutineType, ClassVariableDecleration, ClassVariableType,
+    TypeDecleration,
 };
 use schema::vm;
 use std::collections::HashMap;
@@ -62,7 +63,13 @@ impl SymbolTable {
 
     pub(super) fn with_subroutine(&self, subroutine_dec: &ClassSubroutineDecleration) -> Self {
         let mut table: HashMap<String, SymbolTableRecord> = self.0.clone();
-        for (arg_index, parameter) in subroutine_dec.parameters.iter().enumerate() {
+
+        let arg_index_range = match subroutine_dec.decleration_type {
+            // クラスのメソッドはメソッドのインスタンスがindex0の引数となる必要がある
+            ClassSubroutineType::Method => 1..subroutine_dec.parameters.len() + 1,
+            _ => 0..subroutine_dec.parameters.len(),
+        };
+        for (arg_index, parameter) in arg_index_range.zip(subroutine_dec.parameters.iter()) {
             let record = SymbolTableRecord {
                 symbol_type: parameter.parameter_type.clone(),
                 mapping: MemorySegmentMapping {
