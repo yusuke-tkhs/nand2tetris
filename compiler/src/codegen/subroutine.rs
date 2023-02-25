@@ -74,7 +74,7 @@ pub(super) fn method_to_commands(
     // function class_name.function_name n
     std::iter::once(vm::Command::Function {
         name: vm::Label::new(&format!("{}.{}", class_name, funcion_name)),
-        local_variable_count: body.variable_declerations.len() as u16,
+        local_variable_count: count_local_vars(&body.variable_declerations) as u16,
     })
     .chain([
         // set first argument (this address) to this register
