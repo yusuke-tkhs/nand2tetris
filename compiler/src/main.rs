@@ -26,7 +26,15 @@ fn main() {
         }
 
         input_files.into_iter().for_each(|path| {
-            generate_files(path).unwrap();
+            generate_files(&path)
+                .map_err(|e: anyhow::Error| {
+                    format!(
+                        "Compile failed!\nPath: {}, \nError: {}",
+                        path.as_os_str().to_str().unwrap(),
+                        e.to_string()
+                    )
+                })
+                .unwrap();
         });
     } else if input_arg_path.is_file() {
         if input_arg_path.extension().unwrap() != std::ffi::OsStr::new("jack") {
