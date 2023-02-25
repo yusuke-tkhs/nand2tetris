@@ -54,7 +54,7 @@ fn term_to_commands(symbol_table: &SymbolTable, class_name: &str, term: &Term) -
             index: vm::Index::new(*v),
         })],
         Term::StringConstant(str) => {
-            vec![
+            [
                 // "abc" の場合
                 // push constant 3 // length
                 // call String.new 1
@@ -68,8 +68,22 @@ fn term_to_commands(symbol_table: &SymbolTable, class_name: &str, term: &Term) -
                     name: vm::Label::new("String.new"),
                     args_count: 1,
                 },
-                // TODO
             ]
+            .into_iter()
+            .chain(str.chars().flat_map(|c| {
+                [
+                    vm::Command::MemoryAccess(vm::MemoryAccessCommand {
+                        access_type: vm::AccessType::Push,
+                        segment: vm::Segment::Constant,
+                        index: vm::Index::new(c as u16),
+                    }),
+                    vm::Command::Call {
+                        name: vm::Label::new("String.appendChar"),
+                        args_count: 2,
+                    },
+                ]
+            }))
+            .collect()
         }
         Term::KeywordConstant(keyword) => {
             match keyword {
