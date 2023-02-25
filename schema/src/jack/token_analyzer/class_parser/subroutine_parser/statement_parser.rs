@@ -402,4 +402,48 @@ mod tests {
             ReturnStatement { expression: None },
         );
     }
+
+    #[test]
+    fn parse_complex_let_statement() {
+        // let a = array[Class.method(1)];
+        easy_parser_assert_token(
+            let_statement(),
+            &tokens!(
+                keyword: Let,
+                ident: "a",
+                symbol: Equal,
+                ident: "array",
+                symbol: SquareBracketStart,
+                ident: "Class",
+                symbol: Dot,
+                ident: "method",
+                symbol: RoundBracketStart,
+                int_const: 1,
+                symbol: RoundBracketEnd,
+                symbol: SquareBracketEnd,
+                symbol: SemiColon,
+            ),
+            LetStatement {
+                source: Expression {
+                    term: Term::ArrayIdentifier(
+                        "array".to_string(),
+                        Box::new(Expression {
+                            term: Term::SubroutineCall(SubroutineCall {
+                                subroutine_holder_name: Some("Class".to_string()),
+                                subroutine_name: "method".to_string(),
+                                subroutine_args: vec![Expression {
+                                    term: Term::IntegerConstant(1),
+                                    subsequent_terms: Default::default(),
+                                }],
+                            }),
+                            subsequent_terms: Default::default(),
+                        }),
+                    ),
+                    subsequent_terms: Default::default(),
+                },
+                target_name: "a".to_string(),
+                target_index: None,
+            },
+        );
+    }
 }

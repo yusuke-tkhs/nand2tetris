@@ -209,6 +209,38 @@ mod tests {
     }
 
     #[test]
+    fn parse_nested_expr_array_call() {
+        // array[Class.method()]
+        easy_parser_assert_token(
+            expression(),
+            &tokens!(
+                ident: "array",
+                symbol: SquareBracketStart,
+                ident: "Class",
+                symbol: Dot,
+                ident: "method",
+                symbol: RoundBracketStart,
+                symbol: RoundBracketEnd,
+                symbol: SquareBracketEnd,
+            ),
+            Expression {
+                term: Term::ArrayIdentifier(
+                    "array".to_string(),
+                    Box::new(Expression {
+                        term: Term::SubroutineCall(SubroutineCall {
+                            subroutine_holder_name: Some("Class".to_string()),
+                            subroutine_name: "method".to_string(),
+                            subroutine_args: Default::default(),
+                        }),
+                        subsequent_terms: Default::default(),
+                    }),
+                ),
+                subsequent_terms: Default::default(),
+            },
+        );
+    }
+
+    #[test]
     fn parse_subroutine_call() {
         // get(c,d)
         easy_parser_assert_token(
