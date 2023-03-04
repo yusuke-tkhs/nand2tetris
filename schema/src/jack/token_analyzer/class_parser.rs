@@ -16,6 +16,8 @@ pub fn parse_tokens_as_class(input: &[Token]) -> anyhow::Result<Class> {
     use combine::EasyParser;
     let parsed = class()
         .easy_parse(input)
+        //.map_err(|err| anyhow::anyhow!("{:?}", err))?;
+        .map_err(|err| err.map_position(|p| p.translate_position(input)))
         .map_err(|err| anyhow::anyhow!("{:?}", err))?;
     Ok(parsed.0)
 }
@@ -167,9 +169,9 @@ mod tests {
                 symbol: Equal,
                 ident: "array",
                 symbol: SquareBracketStart,
-                ident: "Class",
+                ident: "Main",
                 symbol: Dot,
-                ident: "method",
+                ident: "double",
                 symbol: RoundBracketStart,
                 int_const: 1,
                 symbol: RoundBracketEnd,
@@ -200,8 +202,8 @@ mod tests {
                                         "array".to_string(),
                                         Box::new(Expression {
                                             term: Term::SubroutineCall(SubroutineCall {
-                                                subroutine_holder_name: Some("Class".to_string()),
-                                                subroutine_name: "method".to_string(),
+                                                subroutine_holder_name: Some("Main".to_string()),
+                                                subroutine_name: "double".to_string(),
                                                 subroutine_args: vec![Expression {
                                                     term: Term::IntegerConstant(1),
                                                     subsequent_terms: Default::default(),

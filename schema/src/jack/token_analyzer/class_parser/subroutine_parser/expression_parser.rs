@@ -29,6 +29,7 @@ parser! {
             term,
             subsequent_terms,
         })
+        .message("expression failed")
     }
 }
 
@@ -53,13 +54,14 @@ parser! {
             // 上の３つはidentifierから始まるので、attempt をつけてかつこの順番である必要がある
             attempt(array_identifier().map(|(ident, expr)|Term::ArrayIdentifier(ident, Box::new(expr)))),
             attempt(subroutine_call().map(Term::SubroutineCall)),
-            identifier().map(Term::Identifier),
-            integer_constant().map(Term::IntegerConstant),
-            string_constant().map(Term::StringConstant),
-            KeywordConstant::parser().map(Term::KeywordConstant),
-            round_bracketed_expr().map(|expr|Term::RoundBraketedExpr(Box::new(expr))),
-            unary_operated_expr().map(|(op, term)|Term::UnaryOperatedExpr(op, Box::new(term))),
+            attempt(identifier().map(Term::Identifier)),
+            attempt(integer_constant().map(Term::IntegerConstant)),
+            attempt(string_constant().map(Term::StringConstant)),
+            attempt(KeywordConstant::parser().map(Term::KeywordConstant)),
+            attempt(round_bracketed_expr().map(|expr|Term::RoundBraketedExpr(Box::new(expr)))),
+            attempt(unary_operated_expr().map(|(op, term)|Term::UnaryOperatedExpr(op, Box::new(term)))),
         ))
+        .message("term failed")
     }
 }
 
@@ -69,6 +71,7 @@ parser! {
     {
         identifier()
             .and(between_square_bracket(expression()))
+            .message("array_identifier failed")
     }
 }
 
@@ -77,6 +80,7 @@ parser! {
     where [Input: Stream<Token = Token>]
     {
         between_round_bracket(expression())
+        .message("round_bracketed_expr failed")
     }
 }
 
@@ -84,7 +88,7 @@ parser! {
     pub(crate) fn unary_operated_expr[Input]()(Input) -> (UnaryOperator, Term)
     where [Input: Stream<Token = Token>]
     {
-        UnaryOperator::parser().and(term())
+        UnaryOperator::parser().and(term()).message("unary_operated_expr failed")
     }
 }
 
@@ -140,6 +144,7 @@ parser! {
             subroutine_name,
             subroutine_args,
         })
+        .message("subroutine_call failed")
     }
 }
 

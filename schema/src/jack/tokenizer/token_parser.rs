@@ -4,7 +4,7 @@ use crate::{
 };
 
 use combine::{
-    between, choice, optional, parser,
+    attempt, between, choice, eof, not_followed_by, one_of, optional, parser,
     parser::{
         char::space,
         repeat::{many, many1},
@@ -48,7 +48,11 @@ parser! {
     where [Input: Stream<Token = char>]
     {
         choice((
-            Keyword::parser().map(Token::Keyword),
+            attempt(Keyword::parser().skip(
+                not_followed_by( // 識別子の先頭が偶然キーワードに一致するものはキーワードとしてパースしない
+                one_of(AVAILABLE_CHARS_IN_IDENTIFIER.chars())
+                .or(one_of("0123456789".chars()))
+            )).map(Token::Keyword)),
             Symbol::parser().map(Token::Symbol),
             p_u16().map(Token::IntegerConstant),
             string_constant().map(Token::StringConstant),

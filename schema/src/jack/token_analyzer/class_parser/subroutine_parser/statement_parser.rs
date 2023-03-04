@@ -44,12 +44,12 @@ parser! {
     pub(crate) fn let_statement[Input]()(Input) -> LetStatement
     where [Input: Stream<Token = Token>]
     {
-        keyword(Keyword::Let)
-        .with(identifier()) // varName
-        .and(optional(between_square_bracket(expression())))
-        .skip(symbol(Symbol::Equal))
-        .and(expression())
-        .skip_semicolon()
+        keyword(Keyword::Let).message("let_statement: let")
+        .with(identifier()).message("let_statement: varName") // varName
+        .and(optional(between_square_bracket(expression()))).message("let_statement: arrayIndex")
+        .skip(symbol(Symbol::Equal)).message("let_statement: skip equal")
+        .and(expression()).message("let_statement: source Expr")
+        .skip_semicolon().message("let_statement: semicolon")
         .map(|((target_name,target_index),source)|LetStatement{
             source,
             target_name,
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn parse_complex_let_statement() {
-        // let a = array[Class.method(1)];
+        // let a = array[Main.double(1)];
         // TODO これ単体テスト通るがproject11のDebugComplexArrayになると通らない。原因調査する
         easy_parser_assert_token(
             let_statement(),
@@ -415,9 +415,9 @@ mod tests {
                 symbol: Equal,
                 ident: "array",
                 symbol: SquareBracketStart,
-                ident: "Class",
+                ident: "Main",
                 symbol: Dot,
-                ident: "method",
+                ident: "double",
                 symbol: RoundBracketStart,
                 int_const: 1,
                 symbol: RoundBracketEnd,
@@ -430,8 +430,8 @@ mod tests {
                         "array".to_string(),
                         Box::new(Expression {
                             term: Term::SubroutineCall(SubroutineCall {
-                                subroutine_holder_name: Some("Class".to_string()),
-                                subroutine_name: "method".to_string(),
+                                subroutine_holder_name: Some("Main".to_string()),
+                                subroutine_name: "double".to_string(),
                                 subroutine_args: vec![Expression {
                                     term: Term::IntegerConstant(1),
                                     subsequent_terms: Default::default(),

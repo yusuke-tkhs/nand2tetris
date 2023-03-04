@@ -28,6 +28,7 @@ parser! {
                 Token::Identifier(s) => Ok(s),
                 _ => Err(StreamErrorFor::<Input>::message( "failed to parse identifer!"))
             })
+            .message("identifier failed")
     }
 }
 
@@ -40,6 +41,7 @@ parser! {
                 Token::StringConstant(s) => Ok(s),
                 _ => Err(StreamErrorFor::<Input>::message( "failed to parse string constant!"))
             })
+            .message("string_constant failed")
     }
 }
 
@@ -52,6 +54,7 @@ parser! {
                 Token::IntegerConstant(v) => Ok(v),
                 _ => Err(StreamErrorFor::<Input>::message( "failed to parse integer constant!"))
             })
+            .message("integer_constant failed")
     }
 }
 

@@ -36,6 +36,7 @@ macro_rules! parsable_enum{
                         choice([
                             $(attempt(string($case_string).with(value($enum_name::$case_name)))),+
                         ])
+                        .message(concat!("'", stringify!($enum_name), "' parse failed"))
                     }
                 }
                 inner_fn()

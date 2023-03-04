@@ -22,6 +22,7 @@ macro_rules! keyword_parsable_enum{
                         choice([
                             $(keyword(Keyword::$case_name).with(value($enum_name::$case_name))),+
                         ])
+                        .message(concat!("keyword '", stringify!($enum_name), "' parse failed"))
                     }
                 }
                 inner_fn()
@@ -63,6 +64,7 @@ macro_rules! symbol_parsable_enum{
                         choice([
                             $(symbol(Symbol::$symbol_name).with(value($enum_name::$case_name))),+
                         ])
+                        .message(concat!("symbol '", stringify!($enum_name), "' parse failed"))
                     }
                 }
                 inner_fn()
