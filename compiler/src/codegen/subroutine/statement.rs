@@ -2,6 +2,7 @@ mod expression;
 
 use crate::codegen::symbol_table::SymbolTable;
 use expression::expression_to_commands;
+use itertools::chain;
 use schema::jack::token_analyzer::*;
 use schema::vm;
 
@@ -37,30 +38,31 @@ fn let_statement_to_commands(
 ) -> Vec<vm::Command> {
     if let Some(index_expr) = &statement.target_index {
         // 配列要素への代入
+        // ポイント：右辺値評価のVMコードを先に実行させる
+        // そうしないと、左辺値の配列先頭ポインタ＋配列Indexの実行結果を、tempセグメントに一時退避する実装が必要になる。
+        // この問題は、左辺値評価のVMコードを先に実行させる場合でも右辺値評価VMコード実行前にpop pointer 1してしまえば
+        // 良いように思えるが、そうすると右辺値に配列参照がある場合に左辺値のpop pointer 1の実行結果が上書きされてバグになる。
+        //
         // jack:
         // let array[index] = value;
         // pesudo vm:
-        // push array
-        // push index
+        // new vm:
+        // push value;
+        // push array;
+        // push index;
         // add
         // pop pointer 1
-        // push value
         // pop that 0
-        set_array_address(symbol_table, class_name, &statement.target_name, index_expr)
-            .into_iter()
-            .chain(expression_to_commands(
-                symbol_table,
-                class_name,
-                &statement.source,
-            ))
-            .chain(std::iter::once(vm::Command::MemoryAccess(
-                vm::MemoryAccessCommand {
-                    access_type: vm::AccessType::Pop,
-                    segment: vm::Segment::That,
-                    index: vm::Index::new(0),
-                },
-            )))
-            .collect()
+        chain!(
+            expression_to_commands(symbol_table, class_name, &statement.source,),
+            set_array_address(symbol_table, class_name, &statement.target_name, index_expr),
+            std::iter::once(vm::Command::MemoryAccess(vm::MemoryAccessCommand {
+                access_type: vm::AccessType::Pop,
+                segment: vm::Segment::That,
+                index: vm::Index::new(0),
+            },))
+        )
+        .collect()
     } else {
         // 配列ではない変数への代入
         // jack:
