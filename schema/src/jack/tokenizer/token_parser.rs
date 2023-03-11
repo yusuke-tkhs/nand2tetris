@@ -4,7 +4,7 @@ use crate::{
 };
 
 use combine::{
-    attempt, between, choice, eof, not_followed_by, one_of, optional, parser,
+    attempt, between, choice, not_followed_by, one_of, optional, parser,
     parser::{
         char::space,
         repeat::{many, many1},

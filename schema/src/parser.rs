@@ -53,11 +53,7 @@ pub(crate) use parsable_enum;
 
 #[test]
 fn test_parsable_enum() {
-    use combine::parser::char::string;
-    use combine::parser::choice::choice;
-    use combine::parser::token::value;
-    use combine::Stream;
-    use combine::{attempt, parser};
+    use combine::parser;
     use tests::easy_parser_assert;
     parsable_enum! {
         #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
