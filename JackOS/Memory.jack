@@ -8,27 +8,124 @@
  * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
+
+// TODO メモリ管理のデバッグテストやる
 class Memory {
+    static Array ram;
+    static Array heap;
+    static int freelist;
 
     /** Initializes the class. */
     function void init() {
+        let ram = 0;
+        let freelist = 0;
+        // heap becomes [nextOfSegment0, lengthOfSegment0, ...Segment0Data, nextOfSegment1, lengthOfSegment1, ......Segment1Data, ...]
+        let heap = 2048; // heapBase
+        let heap[0] = 0;        // next
+        let heap[1] = 14334;    // free length. 16384 - 2048 - 2
+        return;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
+        var int segment;
+        // find segment
+        let segment = Memory.find_best_fit_segment(size);
+        // allocate from the found segment
+        return Memory.allocFromSegment(segment, size);
+    }
+
+    function int find_best_fit_segment(int size) {
+        var int segment, targetSegment, targetSegmentSizeDiff, segmentSizeDiff;
+        let segment = 0;
+        let targetSegment = 0;
+        let targetSegmentSizeDiff = 32767;
+        // `heap[segment] = segment` means that this segment is last memory segment
+        while(~(heap[segment] = segment)) {
+            let segmentSizeDiff = heap[segment + 1] - size;
+            if ((segmentSizeDiff > 0) & (segmentSizeDiff < targetSegmentSizeDiff)) {
+                let targetSegment = segment;
+                let targetSegmentSizeDiff = segmentSizeDiff;
+            }
+            let segment = heap[segment];
+        }
+        return targetSegment;
+    }
+
+    function int allocFromSegment(int segment, int allocSize) {
+        var int segmentLength, allocAddr;
+        let segmentLength = heap[segment + 1];
+        let allocAddr = segment + segmentLength - allocSize + 2;
+        let heap[allocAddr - 1] = allocSize; // mark allocated size on heap memory
+        let heap[segment + 1] = segmentLength - allocSize - 1; // update free length of segment
+        return allocAddr;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
-    }    
+        var int size, segmentBefore, newSegment, newNextSegment;
+        let newSegment = o-1;
+        let size = heap[newSegment];
+        // find before segment
+        let segmentBefore = Memory.findSegmentBeforeDeAllocked(o);
+        if (segmentBefore = heap[segmentBefore]) {
+            // new segment is last segment
+            let newNextSegment = newSegment;
+        } else {
+            // new segment is not last segment
+            let newNextSegment = heap[segmentBefore];
+        }
+        // insert new segment
+        let heap[newSegment] = newNextSegment;
+        let heap[o] = size - 2;
+
+        // update before segment
+        let heap[segmentBefore] = newSegment;
+
+        do Memory.deflag();
+        do Memory.deflag();
+
+        return;
+    }
+
+    function int findSegmentBeforeDeAllocked(Array o) {
+        var int segment, result;
+        let segment = 0;
+        let result = 0;
+        while(~(segment = heap[segment])) {
+            if (segment < o) {
+                let result = segment;
+            }
+            let segment = heap[segment];
+        }
+        return result;
+    }
+
+    function void deflag() {
+        var int segment;
+        let segment = 0;
+        while(~(segment = heap[segment])) {
+            // condition of having adjecent next segment
+            if (heap[segment] = (segment + heap[segment + 1] + 2)) {
+                let heap[segment] = heap[heap[segment]];
+                let heap[segment + 1] = heap[segment + 1] + 2 + heap[heap[segment] + 1];
+                return;
+            }
+            let segment = heap[segment];
+        }
+        return;
+    }
 }
