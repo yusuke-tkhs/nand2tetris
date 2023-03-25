@@ -11,7 +11,7 @@
 
 /** 
     Heap memory segment is from 2048 to 16383, and its length is 14336.
-    We use the ram memory segment model like bellow.
+    We use the heap memory segment model like bellow.
     Memory segment structure is like this:
     | <-            Free Segment          -> | ... | <-    Data Segment    -> | ... | <-            Free Segment          -> | ...
     | Address | Size | vacant | ... | vacant | ... | Size | Data | ... | Data | ... | Address | Size | vacant | ... | vacant | ...
