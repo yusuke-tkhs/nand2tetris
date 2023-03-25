@@ -39,7 +39,6 @@
 
 */
 
-// TODO メモリ管理のデバッグテストやる
 class Memory {
     static Array ram;
     static int HEAPBASE;
