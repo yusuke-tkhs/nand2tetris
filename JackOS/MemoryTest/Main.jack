@@ -1,0 +1,48 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/MemoryTest/Main.jack
+
+/** Test program for the OS Memory class. */
+class Main {
+
+    /** Test Memory.peek(), poke(), alloc() and deAlloc().
+     *
+     *  This test is also a diagnostic.  RAM[17000] is incremented before and
+     *  after every call so that the failure point can be accurately determined
+     *  when using command line testing.  Return values from all alloc() calls
+     *  are also stored in the test results to aid debugging.
+     */
+    function void main() {
+        var Array a, b, c, d, e;
+        let a = Memory.alloc(1);
+        do Main.fill(a, 1, 1);
+        let b = Memory.alloc(2);
+        do Main.fill(b, 2, 2);
+        let c = Memory.alloc(3);
+        do Main.fill(c, 3, 3);
+        let d = Memory.alloc(4);
+        do Main.fill(d, 4, 4);
+        let e = Memory.alloc(5);
+        do Main.fill(e, 5, 5);
+        do Memory.deAlloc(b);
+        do Memory.deAlloc(d);
+        let d = Memory.alloc(2);
+        do Main.fill(d, 2, 44);
+        do Memory.deAlloc(d);
+        do Memory.deAlloc(e);
+        // do Memory.deAlloc(c);
+        // do Memory.deAlloc(a);
+        return;
+    }
+
+    function void fill(Array o, int len, int v){
+        var int i;
+        let i = 0;
+        while(i < len) {
+            let o[i] = v;
+            let i = i + 1;
+        }
+        return;
+    }
+}
