@@ -77,7 +77,7 @@ class Memory {
      *  it available for future allocations. */
     function void deAlloc(Array o) {
         var int size, segmentBefore, newSegment, newNextSegment;
-        let newSegment = o-1;
+        let newSegment = o - 1 - heap;
         let size = heap[newSegment];
         // find before segment
         let segmentBefore = Memory.findSegmentBeforeDeAllocked(o);
@@ -90,12 +90,11 @@ class Memory {
         }
         // insert new segment
         let heap[newSegment] = newNextSegment;
-        let heap[o] = size - 2;
+        let heap[o] = size - 1;
 
         // update before segment
         let heap[segmentBefore] = newSegment;
 
-        do Memory.deflag();
         do Memory.deflag();
 
         return;
@@ -115,17 +114,32 @@ class Memory {
     }
 
     function void deflag() {
+        while (Memory.mergeAdjacentMemorySegments()){}
+        return;
+    }
+
+    // Merge adjacent two free memory segments into single free memory segment.
+    // Return true if two memory segments could be merged.
+    function bool mergeAdjacentMemorySegments() {
         var int segment;
         let segment = 0;
         while(~(segment = heap[segment])) {
             // condition of having adjecent next segment
             if (heap[segment] = (segment + heap[segment + 1] + 2)) {
-                let heap[segment] = heap[heap[segment]];
+                // Calculate free-length of merged memory segment.
                 let heap[segment + 1] = heap[segment + 1] + 2 + heap[heap[segment] + 1];
-                return;
+                // Calculate and set address to next memory segment of the merged memory segment.
+                if (heap[segment] = heap[heap[segment]]){
+                    // If the second segment to be merged is the last segment in heap,
+                    // the merged segment should also be the last segment in heap.
+                    let heap[segment] = segment;
+                } else {
+                    let heap[segment] = heap[heap[segment]];
+                }
+                return true;
             }
             let segment = heap[segment];
         }
-        return;
+        return false;
     }
 }
