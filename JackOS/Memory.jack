@@ -157,8 +157,8 @@ class Memory {
                 let ram[segment + 1] = ram[segment + 1] + 2 + ram[ram[segment] + 1];
                 // Calculate and set address to next memory segment of the merged memory segment.
                 if (ram[segment] = ram[ram[segment]]){
-                    // If the second segment to be merged is the last segment in ram,
-                    // the merged segment should also be the last segment in ram.
+                    // If the second segment to be merged is the last segment in heap,
+                    // the merged segment should also be the last segment in heap.
                     let ram[segment] = segment;
                 } else {
                     let ram[segment] = ram[ram[segment]];
