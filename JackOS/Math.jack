@@ -67,7 +67,18 @@ class Math {
      *  program's code, it handles it by invoking this method. In other words,
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
-    function int divide(int x, int y) {
+    function int divide(int x, int y){
+        var bool isXNegative, isYNegative;
+        var int value;
+        let isXNegative = x < 0;
+        let isYNegative = y < 0;
+        let value = Math.doDivide(Math.abs(x), Math.abs(y));
+        if(isXNegative = isYNegative){
+            return value;
+        }
+        return -value;
+    }
+    function int doDivide(int x, int y) {
         var int q;
         if (y > x) {
             return 0;
@@ -82,7 +93,6 @@ class Math {
             //   = y * (2*q + 1) + (yより小さい値=余り)
             return q + q + 1;
         }
-
     }
 
     /** Returns the integer part of the square root of x. */
@@ -130,7 +140,7 @@ class Math {
         }
     }
 
-    function int bit(int x, int j) {
-        return ~((bits[x] & j) = 0);
+    function bool bit(int x, int j) {
+        return ~((bits[j] & x) = 0);
     }
 }
