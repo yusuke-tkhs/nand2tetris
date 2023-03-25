@@ -9,20 +9,47 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 
+/** 
+    Heap memory segment is from 2048 to 16383, and its length is 14336.
+    We use the ram memory segment model like bellow.
+    Memory segment structure is like this:
+    | <-            Free Segment          -> | ... | <-    Data Segment    -> | ... | <-            Free Segment          -> | ...
+    | Address | Size | vacant | ... | vacant | ... | Size | Data | ... | Data | ... | Address | Size | vacant | ... | vacant | ...
+                       <- vacant section  ->               <- data section ->                          <- vacant section  ->
+
+    Free Segment: vacant memory segment for new objects and arrays.
+    - Address: Address pointing to head of next free segment.
+        If the segment is the end of all free segments, address points to the head of the segment itself.
+    - Size: Available allocation size from this segment, which is equal to length of the vacant section.
+    Data Segment: Allocated memory segment for existing objects and arrays.
+    - Size: Allocated size by this segment, which is equal to length of the data section.
+      This value is used for deallocating data segments and executing deflagmentation.
+    - Data: Actual value for existing objects and arrays.
+
+    When memory is allocated, target free segment is choosed which has available and minimum size.
+      New data segment is created at the end of the vacant section in this free segment.
+      Returned address points to the head of the data section in the created data segment.
+    When memory is deallocated, corresponding data segment is replaced by newly created free segment.
+      Size of this free segment is equal to `data segment size - 1`.
+    After deallocating the data segment, flagmentation reduction is executed if possible.
+      In this process, adjacent free segments are merged into a single segment.
+
+    Initialization:
+      When Memory.init method is called, a free segment equal to the entire heap memory is generated.
+
+*/
+
 // TODO メモリ管理のデバッグテストやる
 class Memory {
     static Array ram;
-    static Array heap;
-    static int freelist;
+    static int HEAPBASE;
 
     /** Initializes the class. */
     function void init() {
         let ram = 0;
-        let freelist = 0;
-        // heap becomes [nextOfSegment0, lengthOfSegment0, ...Segment0Data, nextOfSegment1, lengthOfSegment1, ......Segment1Data, ...]
-        let heap = 2048; // heapBase
-        let heap[0] = 0;        // next
-        let heap[1] = 14334;    // free length. 16384 - 2048 - 2
+        let HEAPBASE = 2048; // heapBase
+        let ram[HEAPBASE] = HEAPBASE;        // next
+        let ram[HEAPBASE + 1] = 14334;    // free length. 16384 - 2048 - 2
         return;
     }
 
@@ -49,27 +76,27 @@ class Memory {
 
     function int find_best_fit_segment(int size) {
         var int segment, targetSegment, targetSegmentSizeDiff, segmentSizeDiff;
-        let segment = 0;
-        let targetSegment = 0;
+        let segment = HEAPBASE;
+        let targetSegment = HEAPBASE;
         let targetSegmentSizeDiff = 32767;
-        // `heap[segment] = segment` means that this segment is last memory segment
-        while(~(heap[segment] = segment)) {
-            let segmentSizeDiff = heap[segment + 1] - size;
+        // `ram[segment] = segment` means that this segment is last memory segment
+        while(~(ram[segment] = segment)) {
+            let segmentSizeDiff = ram[segment + 1] - size;
             if ((segmentSizeDiff > 0) & (segmentSizeDiff < targetSegmentSizeDiff)) {
                 let targetSegment = segment;
                 let targetSegmentSizeDiff = segmentSizeDiff;
             }
-            let segment = heap[segment];
+            let segment = ram[segment];
         }
         return targetSegment;
     }
 
     function int allocFromSegment(int segment, int allocSize) {
         var int segmentLength, allocAddr;
-        let segmentLength = heap[segment + 1];
+        let segmentLength = ram[segment + 1];
         let allocAddr = segment + segmentLength - allocSize + 2;
-        let heap[allocAddr - 1] = allocSize; // mark allocated size on heap memory
-        let heap[segment + 1] = segmentLength - allocSize - 1; // update free length of segment
+        let ram[allocAddr - 1] = allocSize; // mark allocated size on ram memory
+        let ram[segment + 1] = segmentLength - allocSize - 1; // update free length of segment
         return allocAddr;
     }
 
@@ -77,23 +104,23 @@ class Memory {
      *  it available for future allocations. */
     function void deAlloc(Array o) {
         var int size, segmentBefore, newSegment, newNextSegment;
-        let newSegment = o - 1 - heap;
-        let size = heap[newSegment];
+        let newSegment = o - 1;
+        let size = ram[newSegment];
         // find before segment
         let segmentBefore = Memory.findSegmentBeforeDeAllocked(o);
-        if (segmentBefore = heap[segmentBefore]) {
+        if (segmentBefore = ram[segmentBefore]) {
             // new segment is last segment
             let newNextSegment = newSegment;
         } else {
             // new segment is not last segment
-            let newNextSegment = heap[segmentBefore];
+            let newNextSegment = ram[segmentBefore];
         }
         // insert new segment
-        let heap[newSegment] = newNextSegment;
-        let heap[o] = size - 1;
+        let ram[newSegment] = newNextSegment;
+        let ram[o] = size - 1;
 
         // update before segment
-        let heap[segmentBefore] = newSegment;
+        let ram[segmentBefore] = newSegment;
 
         do Memory.deflag();
 
@@ -102,13 +129,13 @@ class Memory {
 
     function int findSegmentBeforeDeAllocked(Array o) {
         var int segment, result;
-        let segment = 0;
-        let result = 0;
-        while(~(segment = heap[segment])) {
+        let segment = HEAPBASE;
+        let result = HEAPBASE;
+        while(~(segment = ram[segment])) {
             if (segment < o) {
                 let result = segment;
             }
-            let segment = heap[segment];
+            let segment = ram[segment];
         }
         return result;
     }
@@ -122,23 +149,23 @@ class Memory {
     // Return true if two memory segments could be merged.
     function bool mergeAdjacentMemorySegments() {
         var int segment;
-        let segment = 0;
-        while(~(segment = heap[segment])) {
+        let segment = HEAPBASE;
+        while(~(segment = ram[segment])) {
             // condition of having adjecent next segment
-            if (heap[segment] = (segment + heap[segment + 1] + 2)) {
+            if (ram[segment] = (segment + ram[segment + 1] + 2)) {
                 // Calculate free-length of merged memory segment.
-                let heap[segment + 1] = heap[segment + 1] + 2 + heap[heap[segment] + 1];
+                let ram[segment + 1] = ram[segment + 1] + 2 + ram[ram[segment] + 1];
                 // Calculate and set address to next memory segment of the merged memory segment.
-                if (heap[segment] = heap[heap[segment]]){
-                    // If the second segment to be merged is the last segment in heap,
-                    // the merged segment should also be the last segment in heap.
-                    let heap[segment] = segment;
+                if (ram[segment] = ram[ram[segment]]){
+                    // If the second segment to be merged is the last segment in ram,
+                    // the merged segment should also be the last segment in ram.
+                    let ram[segment] = segment;
                 } else {
-                    let heap[segment] = heap[heap[segment]];
+                    let ram[segment] = ram[ram[segment]];
                 }
                 return true;
             }
-            let segment = heap[segment];
+            let segment = ram[segment];
         }
         return false;
     }
