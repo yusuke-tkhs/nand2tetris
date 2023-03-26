@@ -10,34 +10,209 @@
  * the screen is indexed (0,0).
  */
 class Screen {
+    static Array screen;
+    static boolean COLOR;
+    static int HEIGHT, WIDTH;
 
     /** Initializes the Screen. */
     function void init() {
+        let screen = 16384;
+        let WIDTH = 512;
+        let HEIGHT = 256;
+        let COLOR = true; // default: black
+        return;
     }
 
     /** Erases the entire screen. */
     function void clearScreen() {
+        var int i;
+        let i = 0;
+        while(i < 8192){
+            let screen[i] = 0;
+        }
+        return;
     }
 
     /** Sets the current color, to be used for all subsequent drawXXX commands.
      *  Black is represented by true, white by false. */
     function void setColor(boolean b) {
+        let COLOR = b;
+        return;
     }
 
     /** Draws the (x,y) pixel, using the current color. */
+    // tested!
     function void drawPixel(int x, int y) {
+        // x: column (left to right)
+        // y: row (up to down)
+        var int address;
+        if(~((x < WIDTH) & (y < HEIGHT))) {
+            do Output.printInt(x);
+            do Output.println();
+            do Output.printInt(y);
+            do Sys.halt();
+            return;
+        }
+        let address = (y * 32) + (x / 16);
+        if(COLOR){
+            // Or operation with 0000000000000010
+            let screen[address] = (screen[address] | Math.getBits(x & 15));
+        } else {
+            // And operation with 1111111111111101
+            let screen[address] = (screen[address] & (~Math.getBits(x & 15)));
+        }
+        return;
     }
 
     /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
     function void drawLine(int x1, int y1, int x2, int y2) {
+        if(x1 = x2){
+            do Screen.drawVerticalLine(x1, y1, y2);
+        }else{
+            if(y1=y2){
+                do Screen.drawHorizontalLine(x1, x2, y1);
+            }else{
+                do Screen.drawDiagonalLine(x1, y1, x2, y2);
+            }
+        }
+        return;
+    }
+    function void drawVerticalLine(int x, int y1, int y2){
+        var int temp;
+        // make sure y1 <= y2
+        if (y1 > y2){
+            let temp = y2;
+            let y2 = y1;
+            let y1 = temp;
+        }
+        while(y1 < (y2 + 1)){
+            do Screen.drawPixel(x, y1);
+            let y1 = y1 + 1;
+        }
+        return;
+    }
+    function void drawHorizontalLine(int x1, int x2, int y){
+        var int temp;
+        // make sure x1 <= x2
+        if (x1 > x2){
+            let temp = x2;
+            let x2 = x1;
+            let x1 = temp;
+        }
+        while(x1 < (x2 + 1)){
+            do Screen.drawPixel(x1, y);
+            let x1 = x1 + 1;
+        }
+        return;
+    }
+    function void drawDiagonalLine(int x1, int y1, int x2, int y2) {
+        var int dx, dy, a, b, adyMinusBdx, temp, xsign, ysign, xshift, yshift, aSentinel, bSentinel;
+        let dx = Math.abs(x2-x1);
+        let dy = Math.abs(y2-y1);
+        if (x1 > x2){
+            let temp = x2;
+            let x2 = x1;
+            let x1 = temp;
+            let xsign = -1;
+            let xshift = dx;
+        }else{
+            let xsign = 1;
+            let xshift = 0;
+        }
+        if (y1 > y2){
+            let temp = y2;
+            let y2 = y1;
+            let y1 = temp;
+            let ysign = -1;
+            let yshift = dy;
+        }else{
+            let ysign = 1;
+            let yshift = 0;
+        }
+        let a = 0;
+        let b = 0;
+        // We want to test (b/a) > (dy/dx)
+        // => b * dx > a * dy
+        // => (b*dx) - (a*dy) > 0
+        // => (a*dy) - (b*dx) < 0
+        // If above is true, we have to increment a, otherwise b.
+        let adyMinusBdx = (a*dy) - (b*dx);
+        let aSentinel = dx + 1;
+        let bSentinel = dy + 1;
+        while((a < aSentinel) & (b < bSentinel)){
+            // This algorithm assume x1 < x2, y1 < y2.
+            // But actualy this is not correct.
+            // So we use trick when drawing.
+            do Screen.drawPixel(x1 + (a * xsign) + xshift, y1 + (b * ysign) + yshift);
+            //do Screen.drawPixel(x1 + a, y1 + b);
+            if (adyMinusBdx < 0){
+                let a = a + 1;
+                let adyMinusBdx = adyMinusBdx + dy;
+            }else{
+                let b = b + 1;
+                let adyMinusBdx = adyMinusBdx - dx;
+            }
+        }
+        return;
     }
 
     /** Draws a filled rectangle whose top left corner is (x1, y1)
      * and bottom right corner is (x2,y2), using the current color. */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
+        var int temp, ySentinel;
+        // make sure x1 <= x2
+        if (y1 > y2){
+            let temp = y2;
+            let y2 = y1;
+            let y1 = temp;
+        }
+        let ySentinel = y2 + 1;
+        while(y1 < ySentinel) {
+            do Screen.drawHorizontalLine(x1, x2, y1);
+            let y1 = y1 + 1;
+        }
+        return;
     }
 
     /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
     function void drawCircle(int x, int y, int r) {
+        var int dy, yPos, yPosSentinel, rPow2, xDiff;
+        let yPos = y-r;
+        let yPosSentinel = y + r + 1;
+        let rPow2 = r * r;
+        while(yPos < yPosSentinel){
+            let dy = yPos - y;
+            let xDiff = Math.sqrt(rPow2 - (dy * dy));
+            do Screen.drawHorizontalLine(x - xDiff, x + xDiff, yPos);
+            let yPos = yPos + 1;
+        }
+        return;
+    }
+
+    // Original algorithm for drawing circle.
+    function void drawCircle2(int x, int y, int r) {
+        var int dx, dy, dxSentinel, dySentinel, pow2Dist, pow2DistSentinel;
+        var bool continue;
+        let dxSentinel = r + 1;
+        let dySentinel = dxSentinel;
+        let dy = -r;
+        let pow2DistSentinel = r * r + 1;
+        while(dy < dySentinel){
+            let dx = 0;
+            let pow2Dist = (dx*dx) + (dy*dy);
+            let continue = true;
+            while((dx < dxSentinel) & continue){
+                if((pow2Dist < pow2DistSentinel)){
+                    do Screen.drawPixel(x + dx, y + dy);
+                    do Screen.drawPixel(x - dx, y + dy);
+                } else {
+                    let continue = false;
+                }
+                let dx = dx + 1;
+                let pow2Dist = pow2Dist + dx + dx + 1; // add (dx + 1)^2 - dx^2
+            }
+            let dy = dy + 1;
+        }
+        return;
     }
 }
