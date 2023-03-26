@@ -262,13 +262,18 @@ class Output {
         }
         let line = i;
         let column = j;
-        do Output.printChar(32); // erase charactor by drawing space
+        do Output.doPrintChar(32); // erase charactor by drawing space
         return;
     }
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
-    function void printChar(char c) {
+    function void printChar(char c){
+        do Output.doPrintChar(c);
+        do Output.advanceCursor();
+        return;
+    }
+    function void doPrintChar(char c) {
         var int address, i, posInWord, mask, charCol;
         var Array charMap;
         let charMap = Output.getMap(c);
@@ -303,7 +308,6 @@ class Output {
         let i = 0;
         while(i < len){
             do Output.printChar(s.charAt(i));
-            do Output.advanceCursor();
             let i = i + 1;
         }
         return;
