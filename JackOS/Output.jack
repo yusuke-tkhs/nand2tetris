@@ -257,7 +257,7 @@ class Output {
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
         if(~((i < LINE_LEN) & (j < COL_LEN))){
-            do Sys.halt(); // TODO convert to Sys.error
+            do Sys.error(20);
             return;
         }
         let line = i;
@@ -357,6 +357,7 @@ class Output {
         } else {
             let column = column - 1;
         }
+        do Output.doPrintChar(32); // erase charactor by drawing space
         return;
     }
 }

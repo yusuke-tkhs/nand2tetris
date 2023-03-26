@@ -11,9 +11,9 @@ class Sys {
 
     /** Performs all the initializations required by the OS. */
     function void init() {
-        let haltCoef = 100;
-        do Math.init();
+        let haltCoef = 2;
         do Memory.init();
+        do Math.init();
         do Keyboard.init();
         do Output.init();
         do Screen.init();
@@ -30,10 +30,15 @@ class Sys {
 
     /** Waits approximately duration milliseconds and returns.  */
     function void wait(int duration) {
-        var int loopCount, i;
-        let loopCount = haltCoef * duration;
+        var int loopCountI, loopCountJ, i, j;
+        let loopCountI = duration / 3;
+        let loopCountJ = duration / haltCoef; // Adjustment for 2sec for duration = 2000
         let i = 0;
-        while(i < loopCount){
+        while(i < loopCountI){
+            let j = 0;
+            while(j < loopCountJ){
+                let j = j + 1;
+            }
             let i = i + 1;
         }
         return;

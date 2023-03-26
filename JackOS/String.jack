@@ -43,7 +43,8 @@ class String {
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
         if(~(j < currentLength)){
-            do Sys.halt(); // Sys.error に変えたい
+            do Sys.error(16);
+            return;
         }
         let str[j] = c;
         return;
@@ -52,7 +53,7 @@ class String {
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
         if(currentLength = maxLengthSelf){
-            do Sys.halt(); // Sys.error に変えたい
+            do Sys.error(17);
         }
         let str[currentLength] = c;
         let currentLength = currentLength + 1;
@@ -63,7 +64,7 @@ class String {
     /** Erases the last character from this string. */
     method void eraseLastChar() {
         if(currentLength = 0) {
-            do Sys.halt(); // Sys.error に変えたい
+            do Sys.error(18);
         }
         let currentLength = currentLength - 1;
         return;

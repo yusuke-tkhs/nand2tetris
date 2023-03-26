@@ -145,4 +145,9 @@ class Math {
     function bool bit(int x, int j) {
         return ~((bits[j] & x) = 0);
     }
+
+    // Return number whose i-th bit is 1, other bits are 0.
+    function int getBits(int i) {
+        return bits[i];
+    }
 }

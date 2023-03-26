@@ -29,6 +29,7 @@ class Screen {
         let i = 0;
         while(i < 8192){
             let screen[i] = 0;
+            let i = i + 1;
         }
         return;
     }
@@ -50,7 +51,7 @@ class Screen {
             do Output.printInt(x);
             do Output.println();
             do Output.printInt(y);
-            do Sys.halt();
+            do Sys.error(7);
             return;
         }
         let address = (y * 32) + (x / 16);
