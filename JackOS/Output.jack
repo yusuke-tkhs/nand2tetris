@@ -14,13 +14,59 @@
  * character position on the screen is indexed (0,0). A cursor, implemented
  * as a small filled square, indicates where the next character will be displayed.
  */
+
+/**
+    I understand that Hack screen memory map is like this.
+    Memory region of 1word(=16bit) * 11 can hold pixels for two characters.
+    In this diagram, memory segment is arranged similar to pixels on the screen.
+    |ram[16384]||ram[16385]| ...|ram[16640]|
+    ...
+    |ram[24320]||ram[24321]| ...|ram[24575]|
+
+    For example, when close up ram[16384], pixels corresponding to bits in each words are like bellow.
+    In this example diagram, string "AB" is shown.
+                        bit   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 ...
+                             < ----------------------------------- 256 words in each row ------------------------->
+                             < -------1 words for two character------------->
+        ^            ^       |0  0  1  1  0  0  0  0  1  1  1  1  1  0  0  0|0000000000000000|...|0000000000000000| (ram[16384] - ram[16640])
+        |            |       |0  1  1  1  1  0  0  0  1  1  0  0  1  1  0  0|0000000000000000|...|0000000000000000| (ram[16641] - ram[16897])
+        |        11 rows for |1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0|0000000000000000|...|0000000000000000| ...
+        |         each char  |1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0|0000000000000000|...|0000000000000000|
+        |            |       |1  1  1  1  1  1  0  0  1  1  1  1  1  0  0  0|0000000000000000|...|0000000000000000|
+        |            |       |1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0|0000000000000000|...|0000000000000000|
+    256 rows on      |       |1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0|0000000000000000|...|0000000000000000|
+    this screen      |       |1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0|0000000000000000|...|0000000000000000|
+        |            |       |1  1  0  0  1  1  0  0  1  1  1  1  1  0  0  0|0000000000000000|...|0000000000000000|
+        |            |       |0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0|0000000000000000|...|0000000000000000|
+        |            v       |0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0|0000000000000000|...|0000000000000000|
+        |                    ...
+        v                    |0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0|0000000000000000|...|0000000000000000| (ram[24320] - ram[24575])
+*/
 class Output {
 
     // Character map for displaying characters
-    static Array charMaps; 
+    static Array charMaps, screen, maskArray;
+    static int line, column, LINE_LEN, COL_LEN, CHAR_WIDTH, CHAR_HEIGHT, COL_WORD_LEN;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let screen = 16384;
+        let line = 0;
+        let column = 0;
+        let LINE_LEN = 23;
+        let COL_LEN = 64;
+        let COL_WORD_LEN = 32; // 1word (16bit) = two text
+        let CHAR_WIDTH = 8;
+        let CHAR_HEIGHT = 11;
+        let maskArray = Array.new(2);
+        // mask for erase 0-8th bit
+        // 1111111100000000 = -256
+        let maskArray[0] = -256;
+        // mask for erase 9-15th bit
+        // 0000000011111111 = 255
+        let maskArray[1] = 255;
+        do Output.initMap();
+        return;
     }
 
     // Initializes the character map array
@@ -210,28 +256,103 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        if(~((i < LINE_LEN) & (j < COL_LEN))){
+            do Sys.halt(); // TODO convert to Sys.error
+            return;
+        }
+        let line = i;
+        let column = j;
+        do Output.printChar(32); // erase charactor by drawing space
+        return;
     }
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
+        var int address, i, posInWord, mask, charCol;
+        var Array charMap;
+        let charMap = Output.getMap(c);
+        if (Math.bit(column, 0)){
+            let posInWord = 1;
+        } else {
+            let posInWord = 0;
+        }
+        let address = (line * COL_WORD_LEN * CHAR_HEIGHT) + (column / 2);
+        let mask = maskArray[posInWord];
+        let i = 0;
+        while(i < CHAR_HEIGHT){
+            // We have to calculate the word value to write to screen memory.
+            // But each word is for two character, we have to preserve existing drawing content.
+            // In order to do this, we use mask and 8-bit shift (= 256 multiplication).
+            let charCol = charMap[i];
+            if (posInWord = 1) {
+                let charCol = charCol * 256;
+            }
+            let screen[address] = (screen[address] & mask) | charCol;
+            let address = address + COL_WORD_LEN;
+            let i = i + 1;
+        }
+        return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i, len;
+        let len = s.length();
+        let i = 0;
+        while(i < len){
+            do Output.printChar(s.charAt(i));
+            do Output.advanceCursor();
+            let i = i + 1;
+        }
+        return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        var String s;
+        let s = String.new(6);
+        do s.setInt(i);
+        do Output.printString(s);
+        do s.dispose();
+        return;
+    }
+
+    /** Progress the cursor once. IF cursor reaches the end, returns to (0, 0). */
+    function void advanceCursor() {
+        if(column = (COL_LEN - 1)){
+            do Output.println();
+        } else {
+            let column = column + 1;
+        }
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let column = 0;
+        if(line = (LINE_LEN - 1)){
+            let line = 0;
+        } else {
+            let line = line + 1;
+        }
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if(column = 0){
+            let column = COL_LEN - 1;
+            if(line = 0){
+                let line = LINE_LEN - 1;
+            } else {
+                let line = line - 1;
+            }
+        } else {
+            let column = column - 1;
+        }
+        return;
     }
 }

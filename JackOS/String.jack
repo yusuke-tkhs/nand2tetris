@@ -100,9 +100,9 @@ class String {
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
         if (val < 0){
-            this.doSetInt(-val, true);
+            do doSetInt(-val, true);
         } else {
-            this.doSetInt(val, false);
+            do doSetInt(val, false);
         }
         return;
     }
@@ -111,40 +111,25 @@ class String {
         // 123 % 10 = 3
         // 1234 => (123)4 => ((12)3)4 => (((1)2)3)4
         var int leftDigits, lastDigit;
-        let currentLength = 0;
-        let leftDigits =  val / 10;
-        if(leftDigits < 10){
+        if(val < 10){
             if(isNegative){
                 let str[0] = 45; // '-'
-                let str[1] = leftDigits + 48;
+                let str[1] = val + 48;
                 let currentLength = 2;
                 return;
             } else {
-                let str[0] = leftDigits + 48;
+                let str[0] = val + 48;
                 let currentLength = 1;
                 return;
             }
         } else {
-            this.setInt(leftDigits);
-            let lastDigit = val - leftDigits * 10;
+            let leftDigits =  val / 10;
+            do doSetInt(leftDigits, isNegative);
+            let lastDigit = val - (leftDigits * 10);
             let str[currentLength] = lastDigit + 48;
             let currentLength = currentLength + 1;
             return;
         }
-    }
-
-    function String int2String(int val) {
-        var int leftDigits, lastDigit, n, c, ;
-        let leftDigits = val / 10;
-        let lastDigit = val - valIntPart * 10; // Math.mod(val, 10);
-        if(leftDigits < 10) {
-
-            return lastDigit + 48;
-        } else {
-            return 
-        }
-        let c = setInt(val / 10);
-        return c
     }
 
     /** Returns the new line character. */
@@ -159,6 +144,6 @@ class String {
 
     /** Returns the double quote (") character. */
     function char doubleQuote() {
-        34;
+        return 34;
     }
 }

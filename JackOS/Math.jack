@@ -78,13 +78,15 @@ class Math {
         }
         return -value;
     }
+
     function int doDivide(int x, int y) {
         var int q;
-        if (y > x) {
+        // 0 < y: stack over flow しているので y > xとみなしてよい
+        if ((y > x) | (y < 0)) {
             return 0;
         }
-        let q = Math.divide(x, y + y); // x/(2*y) の整数部分
-        if ((x - ((q*y) + (q*y))) < y) { // もう一度 yで割れるかどうか
+        let q = Math.doDivide(x, y + y); // x/(2*y) の整数部分
+        if ((x - ((q*y) + (q*y))) < y) { // もう一度 yで割れるかどうか: x - 2qy < y
             // 割れない場合は2qが整数部分。x = y * (2*q) + (yより小さい値=余り)
             return q + q;
         } else {
